@@ -1,1 +1,3 @@
-_env
+*endpoints*
+__pycache__
+*env

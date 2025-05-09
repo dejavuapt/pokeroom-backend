@@ -1,0 +1,9 @@
+asgiref==3.8.1
+coverage==7.8.0
+Django==5.2.1
+iniconfig==2.1.0
+packaging==25.0
+pluggy==1.5.0
+pytest==8.3.5
+pytest-django==4.11.1
+sqlparse==0.5.3
