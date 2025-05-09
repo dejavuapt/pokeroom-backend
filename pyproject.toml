@@ -1,0 +1,11 @@
+[project]
+name = 'pokeroom-backend'
+version = '0.25.05.10.0157'
+description = 'backend part for pokeroom service'
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "pokeroom_backend.settings"
