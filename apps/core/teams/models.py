@@ -44,10 +44,10 @@ class Team(models.Model):
         verbose_name_plural = _("Teams")
         # you can use unique_together for now but keep in mind unique_together may be deprecated in the future as stated in Django docs.
         # unique_together = [['owned_by', 'name']]
-        contstraints = [
+        constraints = [
             models.UniqueConstraint(
-                models.functions.Lower('name'), 
-                fields=['owner_id, name'], 
+                # fields or expressions
+                fields=['owner_id', models.functions.Lower('name'),], 
                 name="unique_lower_name_by_user",
                 violation_error_message=_("That team with name is already exist.")
             ),
@@ -88,7 +88,8 @@ class TeamMember(models.Model):
 class InviteLinkInterface(models.Model):
     """ 
         Abstract model for storing invite links. \n
-        Based on 16 bytes and default expires at 1 day (24h) from created (added in db) 
+        Based on 16 bytes and default expires at 1 day (24h) from created (added in db) \n
+        That class haven't `is_expires` field. If you need to check it: do attribute in your class or create logic.
     """
     
     id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
@@ -146,4 +147,4 @@ class TeamInviteLink(InviteLinkInterface):
     
     class Meta:
         verbose_name = _("Team invitelink")
-        verbose_name_purl = _("Team invitelinks")
+        verbose_name_plural = _("Team invitelinks")
