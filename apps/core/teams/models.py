@@ -1,3 +1,81 @@
 from django.db import models
+from django.utils.translation import gettext as _
+from django.utils import timezone
+from django.contrib.auth import get_user_model
+import uuid
 
-# Create your models here.
+TEAM_ROLES: dict[str,str] = {
+    'O': 'Owner',
+    'M': 'Moderator',
+    'D': 'Default'
+}
+
+UserModel = get_user_model()
+
+class Team(models.Model):
+    
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
+    name = models.CharField(_("Name"),max_length=50,)
+    description = models.TextField(
+        _("Description"),
+        max_length=200,
+        blank=True,
+        null=True,
+    )
+    created_at = models.DateTimeField(_("Created at"),default=timezone.now)
+    owner_id = models.ForeignKey(
+        UserModel,
+        verbose_name=_("Team owner"),
+        on_delete=models.CASCADE, # Maybe in future do different logic, when user delete a Team, if moderators exists at delete time, then owner stay a some moderator from current team
+        related_name='teams'
+    )
+    members = models.ManyToManyField(
+        UserModel,
+        through='TeamMember',
+        through_fields=("team_id", "user_id"),
+        verbose_name=_("Members")
+    )
+    
+    class Meta:
+        verbose_name = _("Team")
+        verbose_name_plural = _("Teams")
+        # you can use unique_together for now but keep in mind unique_together may be deprecated in the future as stated in Django docs.
+        # unique_together = [['owned_by', 'name']]
+        contstraints = [
+            models.UniqueConstraint(
+                models.functions.Lower('name'), 
+                fields=['owner_id, name'], 
+                name="unique_lower_name_by_user",
+                violation_error_message=_("That team with name is already exist.")
+            ),
+        ]
+
+    def __str__(self):
+        return "%s by %s" % (self.get_team_name(), ) 
+    
+    
+    def get_team_name(self) -> str:
+        return getattr(self, 'name')
+    
+    # In case it's should work, bt idk | need to test that
+    def get_owner_name(self) -> str:
+        owner_attr: models.ForeignKey['AbstractUser'] = getattr(self, 'owner_id') # type: ignore
+        return owner_attr.__str__()
+    
+    
+class TeamMember(models.Model):
+    
+    user_id = models.ForeignKey(
+        UserModel, 
+        on_delete=models.CASCADE, 
+        verbose_name=_("Member"), 
+        related_name="member_in"
+    )
+    team_id = models.ForeignKey(
+        Team, 
+        on_delete=models.CASCADE, 
+        verbose_name=_("Team"), 
+        related_name="members"
+    )
+    role = models.CharField(_("Role"), max_length=1, choices=TEAM_ROLES)
+    invited_at = models.DateTimeField(_("Invited date"), default=timezone.now)

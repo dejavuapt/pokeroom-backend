@@ -2,9 +2,11 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext as _
 from django.utils import timezone
+import uuid
 
 class PokeroomUser(AbstractUser):
     
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
     username = models.CharField(
         verbose_name = _("username"),
         max_length=50,
