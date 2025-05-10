@@ -3,12 +3,15 @@ from django.utils.translation import gettext as _
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 import uuid
+import secrets
+from datetime import timedelta, datetime
 
 TEAM_ROLES: dict[str,str] = {
     'O': 'Owner',
     'M': 'Moderator',
     'D': 'Default'
 }
+STANDART_NBYTES: int = 16
 
 UserModel = get_user_model()
 
@@ -79,3 +82,68 @@ class TeamMember(models.Model):
     )
     role = models.CharField(_("Role"), max_length=1, choices=TEAM_ROLES)
     invited_at = models.DateTimeField(_("Invited date"), default=timezone.now)
+
+# TODO: Move this method to upper. Because room need this interface too
+# Abstract InviteLink Model
+class InviteLinkInterface(models.Model):
+    """ 
+        Abstract model for storing invite links. \n
+        Based on 16 bytes and default expires at 1 day (24h) from created (added in db) 
+    """
+    
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
+    token = models.CharField(
+        _("Token"),
+        max_length = 100,
+        default = lambda: InviteLinkInterface._generate_base64_token(),
+        editable=False
+    )
+    created_at = models.DateTimeField(
+        _("Token created date"),
+        default = lambda: timezone.now,
+        editable=False
+    )
+    expires_at = models.DateTimeField(
+        _("Token expires date"),
+        default = lambda: timezone.now + timedelta(days=1),
+        editable=False
+    )
+    
+    class Meta:
+        abstract = True
+        
+    def __str__(self):
+        return '%s expires at %s' % (self.get_token(), self.get_expires_date())
+    
+    def get_token(self) -> str:
+        return getattr(self, 'token')
+    
+    def get_expires_date(self) -> datetime:
+        return getattr(self, 'expires_at')
+            
+    _token_nbytes: int = STANDART_NBYTES #move to global settings mb
+    
+    @classmethod
+    def _check_valid_token(cls):
+        pass
+    
+    # Mb in future add factory of tokens
+    @classmethod
+    def _generate_base64_token(cls) -> str:
+        return "%s" % (secrets.token_urlsafe(getattr(cls, '_token_nbytes')))
+    
+    
+    
+    
+class TeamInviteLink(InviteLinkInterface):
+    
+    team_id = models.OneToOneField(
+        Team,
+        on_delete=models.CASCADE,
+        verbose_name=_("Team"),
+        related_name="invite_link"
+    )
+    
+    class Meta:
+        verbose_name = _("Team invitelink")
+        verbose_name_purl = _("Team invitelinks")
