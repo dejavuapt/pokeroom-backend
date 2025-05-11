@@ -1,0 +1,29 @@
+**/*.pyc.*
+*.py[cod]
+.pytest_cache
+*.egg-info/
+*.egg
+*endpoints*
+*env
+.vscode
+
+# docker-compose databases storages
+/storage/
+/site-packages/
+/.precomcache/
+
+**/media/
+**/__pycache__/
+
+# git specific files
+deploy.sh
+README.md
+Makefile
+Dockerfile
+docker-compose*.yml
+.git
+.gitattributes
+.gitignore
+.gitlab-ci.yml
+.environment.example
+.pre-commit-config.yaml
