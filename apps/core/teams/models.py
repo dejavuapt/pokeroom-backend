@@ -5,13 +5,8 @@ from django.contrib.auth import get_user_model
 import uuid
 import secrets
 from datetime import timedelta, datetime
-
-TEAM_ROLES: dict[str,str] = {
-    'O': 'Owner',
-    'M': 'Moderator',
-    'D': 'Default'
-}
-STANDART_NBYTES: int = 16
+from pokeroom_backend import constants
+from choices import TeamMemberRoleChoice
 
 UserModel = get_user_model()
 
@@ -80,10 +75,11 @@ class TeamMember(models.Model):
         verbose_name=_("Team"), 
         related_name="members"
     )
-    role = models.CharField(_("Role"), max_length=1, choices=TEAM_ROLES)
+    role = models.CharField(_("Role"), max_length=1, choices=TeamMemberRoleChoice)
     invited_at = models.DateTimeField(_("Invited date"), default=timezone.now)
 
 # TODO: Move this method to upper. Because room need this interface too
+# TODO: Write a logic to check all models with invitelinkinterface to drop a links that expires
 # Abstract InviteLink Model
 class InviteLinkInterface(models.Model):
     """ 
@@ -106,7 +102,7 @@ class InviteLinkInterface(models.Model):
     )
     expires_at = models.DateTimeField(
         _("Token expires date"),
-        default = lambda: timezone.now + timedelta(days=1),
+        default = lambda: timezone.now() + timedelta(days=1),
         editable=False
     )
     
@@ -122,7 +118,7 @@ class InviteLinkInterface(models.Model):
     def get_expires_date(self) -> datetime:
         return getattr(self, 'expires_at')
             
-    _token_nbytes: int = STANDART_NBYTES #move to global settings mb
+    _token_nbytes: int = constants.TOKEN_NBYTES 
     
     @classmethod
     def _check_valid_token(cls):
