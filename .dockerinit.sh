@@ -1,0 +1,1 @@
+python3 /code/manage.py migrate --noinput
