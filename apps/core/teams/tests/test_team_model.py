@@ -1,7 +1,8 @@
 import pytest
 from django.contrib.auth import get_user_model
-from apps.core.teams.models import Team
-from types import FunctionType
+from django.db import IntegrityError
+from apps.core.teams.models import Team, TeamMember
+from types import MethodType
 
 UserModel = get_user_model()
 
@@ -27,7 +28,16 @@ class TestTeamModel:
             owner_id = obj_user,
         )
         team.save()
+        team.create_member_by_owner();
         return team
+        
+    def test_team_related_model(self, obj_team: Team, obj_user):
+        assert obj_team in obj_user.teams.all()
+        user_membership: TeamMember = obj_user.member_in.first()
+        assert user_membership.team_id == obj_team
+        assert user_membership.role == 'O'
+        assert user_membership.__str__() == 'test_username in test_team_name Owner'
+        
     
     # do method to allow arguments?
     def test_team_methods_without_args(self, obj_team: Team, obj_user):
@@ -36,11 +46,24 @@ class TestTeamModel:
             'get_team_name': "test_team_name",
             'get_owner_name': "test_username"
         }
-        for fun_name, expected_val in methods_expected_results:
+        for fun_name, expected_val in methods_expected_results.items():
             f = getattr(obj_team, fun_name)
-            if type(f) is FunctionType:
+            if type(f) is MethodType:
                 actual_result = f()
                 assert actual_result == expected_val
             else:
                 assert False, ('That attribute doesn\' exist or is not a function')
         
+    def test_create_team(self, obj_team: Team, obj_user):
+        try:
+            team_with_existed_name = Team.objects.create(
+                name = "test_team_name",
+                owner_id = obj_user
+            )
+            team_with_existed_name.save()
+        except IntegrityError:
+            assert True
+        # except:
+        #     assert False, ('Some another exception')
+        else:
+            assert False, ('Can create object with existing name.')

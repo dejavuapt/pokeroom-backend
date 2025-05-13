@@ -33,7 +33,7 @@ class PokeroomUser(AbstractUser):
         verbose_name_plural = "pusers"
         
     def __str__(self):
-        return "%s (%s)" % (self.get_full_name(), self.get_username())
+        return "%s" % (self.get_username())
     
     # GETTERS
     

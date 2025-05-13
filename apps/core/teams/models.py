@@ -10,6 +10,7 @@ from .choices import TeamMemberRoleChoice
 
 UserModel = get_user_model()
 
+
 class Team(models.Model):
     
     id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
@@ -49,8 +50,18 @@ class Team(models.Model):
         ]
 
     def __str__(self):
-        return "%s by %s" % (self.get_team_name(), ) 
+        return "%s owned by %s" % (self.get_team_name(), self.get_owner_name()) 
     
+    # idk best this practice or not...
+    def create_member_by_owner(self) -> 'TeamMember':
+        team_member = TeamMember.objects.create(
+            user_id = self.owner_id,
+            team_id = self,
+            role = 'O'
+        )
+        team_member.save()
+        return team_member
+        
     
     def get_team_name(self) -> str:
         return getattr(self, 'name')
@@ -75,9 +86,14 @@ class TeamMember(models.Model):
         verbose_name=_("Team"), 
         related_name="team_in"
     )
-    role = models.CharField(_("Role"), max_length=1, choices=TeamMemberRoleChoice)
+    role = models.CharField(_("Role"), max_length=1, choices=TeamMemberRoleChoice.choices)
     invited_at = models.DateTimeField(_("Invited date"), default=timezone.now)
 
+    def __str__(self):
+        return '%s in %s %s' % (
+            self.user_id.get_username(), 
+            self.team_id.get_team_name(),
+            self.get_role_display())
 
 
 
@@ -122,7 +138,7 @@ class InviteLinkInterface(models.Model):
         return getattr(self, 'token')
     
     def get_expires_date(self) -> datetime:
-        return getattr(self, 'expires_at')    
+        return getattr(self, 'expires_at')
     
     
     
