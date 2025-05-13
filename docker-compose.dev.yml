@@ -1,4 +1,15 @@
 services:
+  db:
+    image: postgres:17
+    container_name: pokeroom-postgres-database
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./storage/postgres-main:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
   django:
     image: pokeroom-django-docker
     container_name: pokeroom-django-backend
@@ -10,6 +21,8 @@ services:
       - 8000:8000
     volumes:
       - .:/code
+    depends_on:
+      - db
 
 networks:
   default:

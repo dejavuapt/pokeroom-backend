@@ -15,7 +15,7 @@ FROM python:3.12.10-slim-bullseye
 
 COPY ./requirements.txt .
 # need to understand it...
-RUN pip install uv && uv pip install --system -r requirements.txt
+RUN pip install uv && uv pip install --system -r requirements.txt && pip cache purge && uv cache clean
 
 WORKDIR /code
 COPY . /code
