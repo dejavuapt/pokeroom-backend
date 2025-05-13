@@ -7,17 +7,13 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ['DJANGO_DEBUG'] == 'TRUE'
+# BUG: In docker file when change a .env has no changes. idk why, in future that need to resolve.
+DEBUG = bool(os.environ.get('DJANGO_DEBUG', 0))
 
-ALLOWED_HOSTS = [
-    '127.0.0.1',
-    'localhost',
-    'testserver',
-    '[::1]'
-]
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', ['127.0.0.1']).split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -66,8 +62,12 @@ WSGI_APPLICATION = 'pokeroom_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.%s' % (os.environ.get('DB_ENGINE', 'sqlite3'), ),
+        'NAME': os.environ.get('POSTGRES_DB', os.path.join(BASE_DIR, 'db.sqlite3')),
+        'USER': os.environ.get('POSTGRES_USER'), 
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),
+        'PORT': os.environ.get('DB_PORT'),
     }
 }
 
@@ -112,3 +112,5 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = 'users.PokeroomUser'
