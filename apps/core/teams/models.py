@@ -6,7 +6,7 @@ import uuid
 import secrets
 from datetime import timedelta, datetime
 from pokeroom_backend import constants
-from choices import TeamMemberRoleChoice
+from .choices import TeamMemberRoleChoice
 
 UserModel = get_user_model()
 
@@ -42,7 +42,7 @@ class Team(models.Model):
         constraints = [
             models.UniqueConstraint(
                 # fields or expressions
-                fields=['owner_id', models.functions.Lower('name'),], 
+                fields=['owner_id', 'name',], #teams.Team: (models.E012) 'constraints' refers to the nonexistent field 'Lower(F(name))'. BUG
                 name="unique_lower_name_by_user",
                 violation_error_message=_("That team with name is already exist.")
             ),
@@ -73,10 +73,13 @@ class TeamMember(models.Model):
         Team, 
         on_delete=models.CASCADE, 
         verbose_name=_("Team"), 
-        related_name="members"
+        related_name="team_in"
     )
     role = models.CharField(_("Role"), max_length=1, choices=TeamMemberRoleChoice)
     invited_at = models.DateTimeField(_("Invited date"), default=timezone.now)
+
+
+
 
 # TODO: Move this method to upper. Because room need this interface too
 # TODO: Write a logic to check all models with invitelinkinterface to drop a links that expires
@@ -87,22 +90,25 @@ class InviteLinkInterface(models.Model):
         Based on 16 bytes and default expires at 1 day (24h) from created (added in db) \n
         That class haven't `is_expires` field. If you need to check it: do attribute in your class or create logic.
     """
+    # Lambda doesn't work in migrations:
+    # Mb in future add factory of tokens
+    _token_nbytes: int = constants.TOKEN_NBYTES     
     
     id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
     token = models.CharField(
         _("Token"),
         max_length = 100,
-        default = lambda: InviteLinkInterface._generate_base64_token(),
+        default = "%s" % (secrets.token_urlsafe(_token_nbytes)),
         editable=False
     )
     created_at = models.DateTimeField(
         _("Token created date"),
-        default = lambda: timezone.now,
+        default = timezone.now,
         editable=False
     )
     expires_at = models.DateTimeField(
         _("Token expires date"),
-        default = lambda: timezone.now() + timedelta(days=1),
+        default = timezone.now() + timedelta(days=1),
         editable=False
     )
     
@@ -116,18 +122,8 @@ class InviteLinkInterface(models.Model):
         return getattr(self, 'token')
     
     def get_expires_date(self) -> datetime:
-        return getattr(self, 'expires_at')
-            
-    _token_nbytes: int = constants.TOKEN_NBYTES 
+        return getattr(self, 'expires_at')    
     
-    @classmethod
-    def _check_valid_token(cls):
-        pass
-    
-    # Mb in future add factory of tokens
-    @classmethod
-    def _generate_base64_token(cls) -> str:
-        return "%s" % (secrets.token_urlsafe(getattr(cls, '_token_nbytes')))
     
     
     
