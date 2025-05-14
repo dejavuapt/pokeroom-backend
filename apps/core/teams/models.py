@@ -61,6 +61,10 @@ class Team(models.Model):
         )
         team_member.save()
         return team_member
+    
+    def add_member(self, user_id) -> 'Team':
+        self.members.add(user_id)
+        return self
         
     
     def get_team_name(self) -> str:
@@ -86,7 +90,11 @@ class TeamMember(models.Model):
         verbose_name=_("Team"), 
         related_name="team_in"
     )
-    role = models.CharField(_("Role"), max_length=1, choices=TeamMemberRoleChoice.choices)
+    role = models.CharField(_("Role"), 
+                            max_length=1, 
+                            choices=TeamMemberRoleChoice.choices, 
+                            default=TeamMemberRoleChoice.DEFAULT
+    )
     invited_at = models.DateTimeField(_("Invited date"), default=timezone.now)
 
     def __str__(self):
