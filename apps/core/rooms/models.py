@@ -34,7 +34,7 @@ class Room(models.Model):
     started_at = models.DateTimeField(_("Started at"), null=True, blank=True,)
     finished_at = models.DateTimeField(_("Finished at"), null=True, blank=True,)
     target_game = models.CharField(_("Target game strategy"), max_length=1, choices=Strategies.choices)
-    # target_game_id = models.ForeignKey() # Нужно как-то с этим проработать
+    # target_game_id = models.ForeignKey() # TODO: Нужно как-то с этим проработать
     video_call_link = models.CharField(_("Video call link"), max_length=200, null=True, blank=True,)
     
     class Meta:

@@ -24,17 +24,25 @@ class TestRoomModel:
     def obj_room(self):
         pass
     
+    @pytest.fixture(scope="function")
+    def complex_obj_setup(self, obj_user, obj_team: t_models.Team, obj_room: r_models.Room) -> dict:
+        return {
+            'user': obj_user,
+            'team': obj_team,
+            'room': obj_room
+        }
+    
     ## TEST CASES
     
     @pytest.mark.skip
-    def test_create_room(self):
+    def test_create_room(self, complex_obj_setup):
         """
         Test create room, add members - only in team, invite guesets.
         """
         pass
     
     @pytest.mark.skip
-    def test_choose_poker_game(self):
+    def test_choose_poker_game(self, complex_obj_setup):
         """
         Test means when choose a target game it automate create game_session \n
         and get a based values
@@ -42,14 +50,14 @@ class TestRoomModel:
         pass
     
     @pytest.mark.skip
-    def test_closed_room_after_24hour(self):
+    def test_closed_room_after_24hour(self, complex_obj_setup):
         """
         Test check functionallity when room auto closed after 24h
         """
         pass
     
     @pytest.mark.skip
-    def test_change_host_and_operators_with_room(self):
+    def test_change_host_and_operators_with_room(self, complex_obj_setup):
         """
         Test change hosts, manipulations like: change stage, closed the room, etc.
         """
