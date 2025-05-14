@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'apps.core.users.apps.UsersConfig',
     'apps.core.teams.apps.TeamsConfig',
     'apps.core.rooms.apps.RoomsConfig',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
