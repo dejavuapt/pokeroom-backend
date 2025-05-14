@@ -1,6 +1,7 @@
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+from datetime import timedelta
 
 
 load_dotenv()
@@ -26,6 +27,7 @@ INSTALLED_APPS = [
     'apps.core.teams.apps.TeamsConfig',
     'apps.core.rooms.apps.RoomsConfig',
     'rest_framework',
+    'djoser',
 ]
 
 MIDDLEWARE = [
@@ -91,6 +93,22 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework_simplejwt.authentication.JWTAuthentication'],
+}
+
+SIMPLE_JWT = {
+   'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+   'AUTH_HEADER_TYPES': ('Bearer',),
+} 
+
+DJOSER = {
+    'SERIALIZERS':{
+        'user' : 'api.v1.users.serializers.PokeroomUserSerializer',
+        'current_user': 'api.v1.users.serializers.PokeroomUserSerializer',
+    }
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
