@@ -12,6 +12,7 @@ from .serializers import TeamSreializer
 class TeamViewSet(viewsets.ModelViewSet):
     queryset = Team.objects.all()
     serializer_class = TeamSreializer
+        
 
 # class APITeam(APIView):
 #     def get(self, request):
