@@ -1,22 +1,32 @@
 from rest_framework import serializers
 from apps.core.teams.models import Team, TeamMember
+from apps.core.teams.choices import TeamMemberRoleChoice
 from django.contrib.auth import get_user_model
 
 UserModel = get_user_model()
 
 class MembershipSerializer(serializers.ModelSerializer):
-    user_id = serializers.StringRelatedField(read_only=True, many=True)
-    
+    # user_id = serializers.StringRelatedField(many=True, queryset = UserModel.objects.all(), read_only=False)
+    # team_id = serializers.PrimaryKeyRelatedField(read_only = True, many = True)
     class Meta: 
         model = TeamMember
         fields = ('user_id', 'role', 'invited_at')
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        _id = representation.pop('user_id')
+        representation['role'] = TeamMemberRoleChoice(representation.get('role')).label 
+        return {
+            "user_name": UserModel.objects.get(pk=_id).get_username(),
+            "data": representation
+        }
 
 class TeamSreializer(serializers.ModelSerializer):
-    members = MembershipSerializer(read_only=True, many=True)
+    # members = MembershipSerializer(read_only=True, many=True)
     
     class Meta:
         model = Team
-        fields = ('name', 'description', 'owner_id', 'created_at', 'members')
+        fields = ('id','name', 'description', 'owner_id', 'created_at',) 
         
     def create(self, validated_data):
         owner_id = validated_data.get('owner_id')

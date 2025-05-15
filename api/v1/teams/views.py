@@ -1,17 +1,63 @@
-from django.shortcuts import render
-
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth import get_user_model
 # Create your views here.
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
+from rest_framework import status
 from rest_framework import viewsets
 
-from apps.core.teams.models import Team
-from .serializers import TeamSreializer
+from apps.core.teams.models import Team, TeamMember
+from apps.core.teams.choices import TeamMemberRoleChoice
+
+from http import HTTPMethod
+
+from .serializers import TeamSreializer, MembershipSerializer
+
+UserModel = get_user_model()
+
 
 class TeamViewSet(viewsets.ModelViewSet):
     queryset = Team.objects.all()
     serializer_class = TeamSreializer
+    
+    @action(["get"], detail=True)
+    def get_info(self, request, pk=None):
+        from_user = request.data
+        user_id = from_user.get('user_id', None)
+        if user_id == None:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            'message' : "Wow! user %s It's %s" % (user_id, pk),
+        })
+    #6f6b0cf8-a411-4c0b-bfaa-09c7f2382f40 
+    @action(methods=[HTTPMethod.GET, HTTPMethod.POST], detail=True)
+    def members(self, request, pk = None):
+        team = get_object_or_404(Team, pk=pk)
+        if request.method == HTTPMethod.POST:
+            user = get_object_or_404(UserModel, id=request.data.get('user_id'))
+            current_user = request.user
+            role = request.data.get('role', TeamMemberRoleChoice.DEFAULT)
+            if current_user.member_in.filter(team_id=team, 
+                                             role__in=[TeamMemberRoleChoice.OWNER, 
+                                                       TeamMemberRoleChoice.MODERATOR]).exists():
+                new_membership = TeamMember.objects.create(
+                    user_id = user,
+                    role = role,
+                    team_id = team
+                )
+                serializer = MembershipSerializer(new_membership)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        if request.method == HTTPMethod.GET:
+            member_ships = team.team_in.all()
+            serializer = MembershipSerializer(member_ships, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        return Response(status=status.HTTP_403_FORBIDDEN)
+            
+        
         
 
 # class APITeam(APIView):

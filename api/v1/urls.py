@@ -1,6 +1,7 @@
 from django.urls import path, include
 
 urlpatterns = [
-   path('teams/', include('api.v1.teams.urls')), 
-   path('users/', include('api.v1.users.urls')), 
+   path('t/', include('api.v1.teams.urls')), 
+   path('u/', include('api.v1.users.urls')), 
+   path('token/', include('djoser.urls.jwt'))
 ]

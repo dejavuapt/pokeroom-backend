@@ -62,8 +62,8 @@ class Team(models.Model):
         team_member.save()
         return team_member
     
-    def add_member(self, user_id) -> 'Team':
-        self.members.add(user_id)
+    def add_member(self, user_id, role = 'D') -> 'Team':
+        self.members.add(user_id, role)
         return self
         
     

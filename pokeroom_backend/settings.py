@@ -1,5 +1,6 @@
 from pathlib import Path
 from dotenv import load_dotenv
+from django.apps import apps
 import os
 from datetime import timedelta
 
@@ -103,11 +104,16 @@ SIMPLE_JWT = {
    'AUTH_HEADER_TYPES': ('Bearer',),
 } 
 
+AUTH_USER_MODEL = 'users.PokeroomUser'
+
+# TODO: Remove djsor settings to settings config from here
 DJOSER = {
     'SERIALIZERS':{
-        'user' : 'api.v1.users.serializers.PokeroomUserSerializer',
-        'current_user': 'api.v1.users.serializers.PokeroomUserSerializer',
-    }
+        'user' : 'api.v1.users.serializers.UserSerializer',
+        'current_user': 'api.v1.users.serializers.CurrentUserSerializer',
+    },
+    'HIDE_USERS': False,
+    'LOGOUT_ON_PASSWORD_CHANGE': True,
 }
 
 # Internationalization
@@ -132,4 +138,3 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'users.PokeroomUser'
