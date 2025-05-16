@@ -28,6 +28,19 @@ class TeamSreializer(serializers.ModelSerializer):
         model = Team
         fields = ('id','name', 'description', 'owner_id', 'created_at',) 
         
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        _id = representation.pop('id')
+        user = self.context.get('user')
+        return {
+            "team_id": _id,
+            "data": representation,
+            "user_data": {
+                'role': TeamMemberRoleChoice(user.member_in.filter(team_id = instance).first().role).label
+            }
+        }
+        
+        
     def create(self, validated_data):
         owner_id = validated_data.get('owner_id')
         try:
@@ -42,3 +55,4 @@ class TeamSreializer(serializers.ModelSerializer):
         team.save()
         team.create_member_by_owner()
         return team
+    
