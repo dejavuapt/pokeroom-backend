@@ -3,11 +3,13 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 # Create your views here.
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view, action
+from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework import viewsets
 
+from .permissions import CurrentUserIsModeratorOrOwnerOrAdmin, CurrentUserIsOwnerOrAdmin
 from apps.core.teams.models import Team, TeamMember
 from apps.core.teams.choices import TeamMemberRoleChoice
 
@@ -25,6 +27,13 @@ class TeamViewSet(viewsets.ModelViewSet):
     def get_serializer(self, *args, **kwargs):
         kwargs['context'] = {'user': self.request.user}
         return super().get_serializer(*args, **kwargs)
+    
+    def get_permissions(self):
+        if self.action == "members":
+            self.permission_classes = CurrentUserIsModeratorOrOwnerOrAdmin
+        elif self.action == "destroy":
+            self.permission_classes = CurrentUserIsOwnerOrAdmin
+        return super().get_permissions()
     
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -44,34 +53,28 @@ class TeamViewSet(viewsets.ModelViewSet):
     
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        current_user = request.user
-        if current_user.member_in.filter(team_id = instance,
-                                         role__in=[TeamMemberRoleChoice.OWNER]).exists():
-            self.perform_destroy(instance)
-            return Response(status = status.HTTP_204_NO_CONTENT)
+        self.perform_destroy(instance)
+        return Response(status = status.HTTP_204_NO_CONTENT)
         
-        return Response(
-            data = {"message": "You haven't permissions."},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
+        # return Response(
+        #     data = {"message": "You haven't permissions."},
+        #     status=status.HTTP_403_FORBIDDEN
+        # )
+    # TODO: Переработать пост запрос, т.к. у Пользователей не будет поиск по пользователям
+    # поэтому добавление нового пользователя в команду нужно делать через внешний запрос 
     @action(methods=[HTTPMethod.GET, HTTPMethod.POST], detail=True)
     def members(self, request, pk = None):
         team = get_object_or_404(Team, pk=pk)
         if request.method == HTTPMethod.POST:
             user = get_object_or_404(UserModel, id=request.data.get('user_id'))
-            current_user = request.user
             role = request.data.get('role', TeamMemberRoleChoice.DEFAULT)
-            if current_user.member_in.filter(team_id=team, 
-                                             role__in=[TeamMemberRoleChoice.OWNER, 
-                                                       TeamMemberRoleChoice.MODERATOR]).exists():
-                new_membership = TeamMember.objects.create(
-                    user_id = user,
-                    role = role,
-                    team_id = team
-                )
-                serializer = MembershipSerializer(new_membership)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            new_membership = TeamMember.objects.create(
+                user_id = user,
+                role = role,
+                team_id = team
+            )
+            serializer = MembershipSerializer(new_membership)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         elif request.method == HTTPMethod.GET:
             member_ships = team.team_in.all()
             serializer = MembershipSerializer(member_ships, many=True)
