@@ -9,61 +9,68 @@ UserModel = get_user_model()
 # TODO: Дописать тесты, а лучше по юзкейсам начать думать, что юзер создает, добавляет, редактирует и т.п.
 class TestTeamModel:
     pytestmark: list[pytest.MarkDecorator] = [pytest.mark.django_db]
-
-    # TODO: Разобраться с фикстурами, потому что я всё ещё не понимаю че за бред со скоупом в pytest
-    @pytest.fixture(scope='function')
-    def obj_user(self) -> any:
-        test_user =  UserModel(
-            username = "test_username",
-            password = "test_password"
-        )
-        test_user.save()
-        return test_user
     
     @pytest.fixture(scope='function')
-    def obj_team(self, obj_user) -> Team:
-        team = Team.objects.create(
-            name = "test_team_name",
-            description = "test_some long description to get information about this test team",
-            owner_id = obj_user,
-        )
-        team.save()
-        team.create_member_by_owner();
-        return team
-        
-    def test_team_related_model(self, obj_team: Team, obj_user):
-        assert obj_team in obj_user.teams.all()
-        user_membership: TeamMember = obj_user.member_in.first()
-        assert user_membership.team_id == obj_team
-        assert user_membership.role == 'O'
-        assert user_membership.__str__() == 'test_username in test_team_name Owner'
-        
+    def user(self, **kwargs): 
+        def _user(**kwargs):
+            user = UserModel.objects.create(**kwargs)
+            user.save()
+            return user
+        return _user
+       
+    @pytest.fixture(scope='function')
+    def team(self, **kwargs):
+        def _team(**kwargs):
+            team = Team.objects.create(**kwargs) 
+            team.save()
+            team.create_member_by_owner()
+            return team
+        return _team
+            
     
-    # do method to allow arguments?
-    def test_team_methods_without_args(self, obj_team: Team, obj_user):
-        methods_expected_results: dict[str,any] = {
-            '__str__': "test_team_name owned by test_username", 
+    @pytest.fixture(scope='function')
+    def complex_data(self, user, team) -> dict:
+        first_user = user(username = "test_username", password = "test_password")
+        team_by_first_user: Team = team(name = "test_team_name", description="a long...", owner_id=first_user)
+        member_first = user(username = "test_username_two", email = "email_one@one.one", )
+        member_second = user(username = "test_username_three", email = "email_tow@two.two",)
+        return {
+            'owner': first_user,
+            'team': team_by_first_user,
+            'member_one': member_first,
+            'member_two': member_second,
+        }
+        
+    def test_team_related_model(self, complex_data: dict):
+        membership = complex_data.get('owner').member_in.first()
+        assert complex_data.get('team') in complex_data.get('owner').teams.all()
+        assert membership.team_id == complex_data.get('team') 
+        assert membership.role == 'O'
+        assert membership.__str__() == 'test_username in test_team_name Owner'
+       
+    def test_team_methods(self, complex_data: dict):
+        methods_expected_results: dict[str, any] = {
+            '__str__': "test_team_name owned by test_username",
             'get_team_name': "test_team_name",
             'get_owner_name': "test_username"
-        }
+        } 
         for fun_name, expected_val in methods_expected_results.items():
-            f = getattr(obj_team, fun_name)
+            f = getattr(complex_data.get('team'), fun_name)
             if type(f) is MethodType:
-                actual_result = f()
-                assert actual_result == expected_val
+                result = f()
+                assert result == expected_val
             else:
-                assert False, ('That attribute doesn\' exist or is not a function')
-        
-    def test_create_team(self, obj_team: Team, obj_user):
+                assert False, ('[NOT PASSED] That attribute doesn\'t exist or is not a method type')
+    
+    def test_unique_create(self, complex_data: dict, team):
         try:
-            team_with_existed_name = Team.objects.create(
-                name = "test_team_name",
-                owner_id = obj_user
-            )
-            team_with_existed_name.save()
+            new_team = team(name = str(complex_data.get('team').name), owner_id = complex_data.get('owner'))
         except IntegrityError:
             assert True
-        # except:
-        #     assert False, ('Some another exception')
         else:
-            assert False, ('Can create object with existing name.')
+            assert False, ('[NOT PASSED] Model allowed create a team with existing name by user')
+            
+    def test_add_members(self, complex_data: dict):
+        team: Team = complex_data.get('team').add_member(complex_data.get('member_one'))
+        assert team in complex_data.get('member_one').team_set.all()
+        assert 'Default' == team.team_in.last().get_role_display()

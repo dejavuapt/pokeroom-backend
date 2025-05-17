@@ -1,6 +1,8 @@
 from pathlib import Path
 from dotenv import load_dotenv
+from django.apps import apps
 import os
+from datetime import timedelta
 
 
 load_dotenv()
@@ -25,6 +27,8 @@ INSTALLED_APPS = [
     'apps.core.users.apps.UsersConfig',
     'apps.core.teams.apps.TeamsConfig',
     'apps.core.rooms.apps.RoomsConfig',
+    'rest_framework',
+    'djoser',
 ]
 
 MIDDLEWARE = [
@@ -90,6 +94,27 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework_simplejwt.authentication.JWTAuthentication'],
+}
+
+SIMPLE_JWT = {
+   'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+   'AUTH_HEADER_TYPES': ('Bearer',),
+} 
+
+AUTH_USER_MODEL = 'users.PokeroomUser'
+
+# TODO: Remove djsor settings to settings config from here
+DJOSER = {
+    'SERIALIZERS':{
+        'user' : 'api.v1.users.serializers.UserSerializer',
+        'current_user': 'api.v1.users.serializers.CurrentUserSerializer',
+    },
+    'HIDE_USERS': False,
+    'LOGOUT_ON_PASSWORD_CHANGE': True,
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -113,4 +138,3 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'users.PokeroomUser'
