@@ -112,9 +112,10 @@ DJOSER = {
         'user' : 'api.v1.users.serializers.UserSerializer',
         'current_user': 'api.v1.users.serializers.CurrentUserSerializer',
     },
-    'HIDE_USERS': False,
+    'HIDE_USERS': True,
     'LOGOUT_ON_PASSWORD_CHANGE': True,
 }
+APPEND_SLASH = True
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

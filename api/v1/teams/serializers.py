@@ -26,7 +26,7 @@ class TeamSreializer(serializers.ModelSerializer):
     
     class Meta:
         model = Team
-        fields = ('id','name', 'description', 'owner_id', 'created_at',) 
+        fields = ('id','name', 'description', 'created_at',) 
         
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -35,9 +35,7 @@ class TeamSreializer(serializers.ModelSerializer):
         return {
             "team_id": _id,
             "data": representation,
-            "user_data": {
-                'role': MembershipRoleChoice(user.member_in.filter(team_id = instance).first().role).label
-            }
+            'role': str(MembershipRoleChoice(user.member_in.filter(team_id = instance).first().role).label)
         }
         
         
@@ -53,6 +51,5 @@ class TeamSreializer(serializers.ModelSerializer):
             owner_id = owner
         )
         team.save()
-        team.create_member_by_owner()
         return team
     

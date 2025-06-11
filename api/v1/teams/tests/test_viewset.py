@@ -1,53 +1,53 @@
-# import pytest
-# from apps.core.teams.models import Team, Membership
-# from api.v1.teams.views import TeamViewSet
-# from api.v1.users.views import UserViewSet
-# from django.contrib.auth import get_user_model
-# from django.contrib.auth.models import AbstractUser
-# from rest_framework.test import APIClient as Client
-# from django.urls import reverse
-# # from rest_framework.request import Request
-# import requests
-
-# User = get_user_model()
+import pytest
+from apps.core.teams.models import Team, Membership
+from api.v1.teams.views import TeamViewSet
+from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient as Client
+from rest_framework import status
+from django.urls import reverse
+import requests
+from conftest import *
+import os, json
 
 
-# class TestTeamViewset():
+User = get_user_model()
+
+def temp_write_to_file(result):
+    file_path = os.path.join(os.path.dirname(__file__), 'output.json')
+    with open(file_path, 'w') as json_file:
+        json.dump(result, json_file, indent=4)
+
+# GET /u/teams/ & /u/teams/{name}/
+def test_user_teams(auth_client: Client, user_data_factory) -> None:
+    team_name:str = "TestTeamName"
+    user_data: dict = user_data_factory()
+    Team.objects.create(
+        name = team_name, 
+        owner_id = User.objects.filter(username = user_data.get("username")).first()
+    )
+     
+    url: str = reverse("users:user-teams-list")
+    resp = auth_client.get(path = url)
+    assert resp.status_code == status.HTTP_200_OK
+    assert len(resp.data) == 1
     
-#     @pytest.fixture(scope='function')
-#     def client(self):
-#         return Client()
-    
-#     @pytest.fixture(scope='function')
-#     def auth_client(self, client: Client) -> Client:
-#         register_url = UserViewSet.reverse_action("u-list") # Ощущение, что это не правильный роут
-#         user_data = {
-#             "username": "test_user",
-#             "email": "test_user@gmail.cos",
-#             "password": "test_password1"
-#         }
-#         client.post(register_url, user_data)
-        
-#         auth_url = reverse("token:jwt-create")
-#         access_token = client.post(
-#             auth_url, { "username": user_data.get("username"), "password": user_data.get("password")  }
-#         ).data.get("access")
-#         client.credentials(HTTP_AUTHORIZATION='Bearer %s' % (access_token))
-        
-#         return client
+    url: str = reverse("users:user-teams-list") + team_name + "/"
+    resp = auth_client.get(path = url)
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data.get("data").get("name") == team_name
     
     
     
-#     # POST /api/v1/t/
-#     def test_create_team(self, auth_client: Client):
-#         data_to_create = {
-#             "name": "test_team-name",
-#         }
-#         request = auth_client.post(reverse("teams:t-create"), data_to_create)
-#         teams = Team.objects.filter(name = data_to_create.get("name"))
-#         assert teams.exists()
-#         assert teams.first().owner_id == request.user
-#         assert teams.first().description == None
+    # # POST /api/v1/t/
+    # def test_create_team(self, auth_client: Client):
+    #     data_to_create = {
+    #         "name": "test_team-name",
+    #     }
+    #     request = auth_client.post(reverse("teams:t-create"), data_to_create)
+    #     teams = Team.objects.filter(name = data_to_create.get("name"))
+    #     assert teams.exists()
+    #     assert teams.first().owner_id == request.user
+    #     assert teams.first().description == None
         
     
     

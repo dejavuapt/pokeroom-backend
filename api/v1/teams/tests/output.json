@@ -1,0 +1,11 @@
+[
+    {
+        "team_id": "973a4002-befe-4107-b9e5-74db2a088535",
+        "data": {
+            "name": "TestTeamName",
+            "description": null,
+            "created_at": "2025-06-11T18:18:37.156611Z"
+        },
+        "role": "Owner"
+    }
+]
