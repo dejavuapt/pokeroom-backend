@@ -1,5 +1,5 @@
 import pytest
-from apps.core.teams.models import Team, TeamMember
+from apps.core.teams.models import Team, Membership
 from api.v1.teams.views import TeamViewSet
 from api.v1.users.views import UserViewSet
 from django.contrib.auth import get_user_model

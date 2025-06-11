@@ -1,18 +1,14 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.db.models import Q
-# Create your views here.
-from rest_framework.views import APIView
-from rest_framework.decorators import api_view, action, permission_classes
+from rest_framework.decorators import action 
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from rest_framework import status
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 
 from .permissions import IsOwner, IsOwnerOrModerator 
 from rest_framework.permissions import IsAdminUser
-from apps.core.teams.models import Team, TeamMember
-from apps.core.teams.choices import TeamMemberRoleChoice
+from apps.core.teams.models import Team, Membership
+from apps.core.teams.choices import MembershipRoleChoice
 
 from http import HTTPMethod
 
@@ -85,8 +81,8 @@ class TeamViewSet(viewsets.ModelViewSet):
         team = get_object_or_404(Team, pk=pk)
         if request.method == HTTPMethod.POST:
             user = get_object_or_404(UserModel, id=request.data.get('user_id'))
-            role = request.data.get('role', TeamMemberRoleChoice.DEFAULT)
-            new_membership = TeamMember.objects.create(
+            role = request.data.get('role', MembershipRoleChoice.DEFAULT)
+            new_membership = Membership.objects.create(
                 user_id = user,
                 role = role,
                 team_id = team
