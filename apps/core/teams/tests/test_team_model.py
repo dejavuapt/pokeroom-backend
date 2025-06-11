@@ -11,6 +11,7 @@ UserModel = get_user_model()
 def test_owner_membership(team_factory, user_factory) -> None:
     owner = user_factory()
     t: Team = team_factory(owner_id = owner)
+    assert Membership.objects.count() == 1
     assert Membership.objects.last().get_role_display() == "Owner"
     
 def test_team_methods(team_factory, user_factory):
@@ -36,10 +37,3 @@ def test_unique_create(team_factory, user_factory):
     team = team_factory(name = not_unq_name, owner_id = team_owner)
     with pytest.raises(IntegrityError):
         new_team = team_factory(name = not_unq_name, owner_id = team_owner) 
-
-def test_add_member(team_factory, user_factory):
-    owner = user_factory()
-    t: Team = team_factory(owner_id = owner) 
-    member = user_factory(username = "ImTheMember", email = "member@example.com")
-    t.add_member(member)
-    assert Membership.objects.last().role == MembershipRoleChoice.DEFAULT

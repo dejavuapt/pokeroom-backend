@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.utils.translation import gettext as _
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -49,26 +49,34 @@ class Team(models.Model):
         ]
 
     def save(self, **kwargs):
-        super().save(**kwargs)
-        if self.owner_id is not None:
+        created: bool = self._state.adding
+        if created:
             self._crt_ownership()
+            
+        super().save(**kwargs)
         
-
     def __str__(self):
         return self.name
     
-    def _crt_ownership(self) -> 'Membership':
-        team_member = Membership.objects.create(
-            user = self.owner_id,
-            team = self,
-            role = 'O'
-        )
-        team_member.save()
-        return team_member
+    def _crt_ownership(self) -> None:
+        Membership.objects.create(user = self.owner_id,
+                                  team = self,
+                                  role = MembershipRoleChoice.OWNER).save()
     
-    def add_member(self, user, role = 'D') -> 'Team':
-        tm = Membership.objects.create(team = self, user = user, role = role)
-        tm.save()
+    def set_new_owner(self, new_owner_user) -> 'Team':
+        if Membership.objects.filter(user = new_owner_user, team = self).exists() and self.owner_id != new_owner_user:
+            Membership.objects.filter(user = self.owner_id, team = self).update(role = MembershipRoleChoice.DEFAULT)
+            Membership.objects.filter(user = new_owner_user, team = self).update(role = MembershipRoleChoice.OWNER)
+            self.owner_id = new_owner_user
+            self.save()
+        else:
+            raise ValueError("You can't give owner's rights to a person who isn't on the team or yourself.")
+        return self
+    
+    def add_member(self, user, role = MembershipRoleChoice.DEFAULT) -> 'Team':
+        if role is not MembershipRoleChoice.OWNER:
+            tm = Membership.objects.create(team = self, user = user, role = role)
+            tm.save()
         return self
         
     def get_team_name(self) -> str:

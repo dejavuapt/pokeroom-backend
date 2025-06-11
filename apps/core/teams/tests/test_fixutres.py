@@ -31,10 +31,10 @@ def team_factory(db):
     return create_team
 
 @pytest.fixture()
-def membership_factory(db, user, team):
+def membership_factory(db ):
     def create_membership(
-        user = user,
-        team = team,
+        user,
+        team,
         role = MembershipRoleChoice.DEFAULT.value
     ):
         return Membership.objects.create(user = user, team = team, role = role)
