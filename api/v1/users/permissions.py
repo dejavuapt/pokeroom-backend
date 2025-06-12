@@ -16,3 +16,8 @@ class IsMembershipOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         logger.warning(obj)
         return obj.user == request.user and obj.role == MembershipRoleChoice.OWNER
+    
+class IsMembershipOwnerOrModerator(permissions.BasePermission):
+    
+    def has_object_permission(self, request, view, obj):
+        return obj.user == request.user and obj.role in [MembershipRoleChoice.OWNER, MembershipRoleChoice.MODERATOR]

@@ -17,32 +17,10 @@ def temp_write_to_file(result):
     file_path = os.path.join(os.path.dirname(__file__), 'output.json')
     with open(file_path, 'w') as json_file:
         json.dump(result, json_file, indent=4)
-
-# GET /u/teams/ & /u/teams/{name}/
-def test_user_teams(auth_client: Client, user_data_factory) -> None:
-    team_name:str = "TestTeamName"
-    user_data: dict = user_data_factory()
-    Team.objects.create(
-        name = team_name, 
-        owner_id = User.objects.filter(username = user_data.get("username")).first()
-    )
-     
-    url: str = reverse("users:user-teams-list")
-    resp = auth_client.get(path = url)
-    assert resp.status_code == status.HTTP_200_OK
-    assert len(resp.data) == 1
-    temp_write_to_file(resp.data)
-    
-    url: str = reverse("users:user-teams-list") + team_name + "/"
-    resp = auth_client.get(path = url)
-    assert resp.status_code == status.HTTP_200_OK
-    assert resp.data.get("data").get("name") == team_name
-
-
-# View members by team 
-# GET OPTIONS /u/teams/{name}/members/
-# PATCH /u/teams/{name}/members/ - change role
-def test_view_team_members(auth_client, user_data_factory, team_factory, user_factory) -> None:
+        
+        
+@pytest.fixture
+def complex(db, user_data_factory, team_factory, user_factory):
     user_data: dict = user_data_factory()
     user = User.objects.filter(username = user_data.get("username")).first()
     
@@ -50,24 +28,91 @@ def test_view_team_members(auth_client, user_data_factory, team_factory, user_fa
     team: Team = team_factory(name = team_name, owner_id = user)
     
     another_user = user_factory(username = "AnotherUser", email = "another@example.com")
-    url: str = reverse("users:team-members-list", kwargs={"id": str(team.id)})
+    return {
+        "user": user,
+        "user_team": team,
+        "another_user": another_user    
+    } 
 
-    resp = auth_client.post(path = url, data = {"username": another_user.username}, format = 'json')
-    assert resp.status_code == status.HTTP_201_CREATED
+# GET /u/teams/ & /u/teams/{name}/
+def test_user_teams(auth_client: Client, complex) -> None:
+    team = complex.get("user_team")
+    
+    main_url:str = reverse("users:user-teams-list")
      
+    url: str = main_url
     resp = auth_client.get(path = url)
     assert resp.status_code == status.HTTP_200_OK
+    assert len(resp.data) == 1
     
-    url: str = reverse("users:team-members-list", kwargs={"id": str(team.id)}) + '%s/' % another_user.username
+    url = main_url + str(team.id) + "/"
+    resp = auth_client.get(path = url)
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data.get("data").get("name") == team.name
+    
+    resp = auth_client.post(path = main_url, data = {
+        'name': "NewTestTeam",
+    })
+    assert resp.status_code == status.HTTP_201_CREATED
+    assert resp.data.get("owner") == str(complex.get("user").id)
+    
+    with pytest.raises(ValueError):
+        resp = auth_client.post(path = main_url, data = {
+            'name': "TeamForAnotherUser",
+            'owner_id': str(complex.get("another_user").id)
+        })
+    
+    new_team = Team.objects.get(name = "NewTestTeam")
+    url = main_url + str(new_team.id) + "/"
+    resp = auth_client.patch(path = url, data = {
+        'name': "NOWtestteam", 'description': "Wow! It's desc!!!"
+    })
+    assert resp.status_code == status.HTTP_200_OK
+    
+    resp = auth_client.get(path = url)
+    assert resp.data.get("data").get("name") == "NOWtestteam" \
+        and resp.data.get("data").get("description") == "Wow! It's desc!!!"
+        
+    resp = auth_client.delete(path = url)
+    assert resp.status_code == status.HTTP_204_NO_CONTENT
+    assert Membership.objects.all().count() == 1
+    
+    
+    
+    
+# TODO: Convert to atomics test
+# GET OPTIONS /u/teams/{name}/members/
+# PUT PATCH DELETE /u/teams/{name}/members/{user_id} - change role and get owner to another user
+def test_view_team_members(auth_client, complex) -> None:
+    user = complex.get("user")
+    team = complex.get("user_team") 
+    another_user = complex.get("another_user")
+    
+    main_url: str = reverse("users:team-members-list", kwargs={"id": str(team.id)})
+
+    resp = auth_client.post(path = main_url, data = {"username": another_user.username}, format = 'json')
+    assert resp.status_code == status.HTTP_201_CREATED
+     
+    resp = auth_client.get(path = main_url)
+    assert resp.status_code == status.HTTP_200_OK
+    
+    url: str = main_url + '%s/' % another_user.username
     resp = auth_client.patch(path= url, data= {"role": "moderator"})
     assert resp.status_code == status.HTTP_200_OK
     assert Membership.objects.filter(team = team, user = another_user).first().role == 'M'
     
-    url: str = reverse("users:team-members-list", kwargs={"id": str(team.id)}) + '%s/' % user.username
+    resp = auth_client.delete(path = url)
+    assert resp.status_code == status.HTTP_204_NO_CONTENT
+    assert Team.objects.filter(id = team.id).first().members.count() == 1
+    resp = auth_client.post(path = main_url, data = {"username": another_user.username}, format = 'json')
+    
+    url = main_url + '%s/' % user.username
     resp = auth_client.patch(path = url, data = {"role": "moderator"})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
+    resp = auth_client.delete(path = url)
+    assert resp.status_code == status.HTTP_400_BAD_REQUEST
     
-    url: str = reverse("users:team-members-list", kwargs={"id": str(team.id)}) + '%s/' % another_user.username
+    url = main_url + '%s/' % another_user.username
     resp = auth_client.patch(path = url, data = {"role": "owner"})
     assert resp.status_code == status.HTTP_200_OK
     assert Membership.objects.filter(team = team, user = another_user).first().role == 'O'
@@ -76,6 +121,9 @@ def test_view_team_members(auth_client, user_data_factory, team_factory, user_fa
     assert Team.objects.filter(owner_id = user).count() == 0
     
     resp = auth_client.patch(path = url, data = {"role": "moderator"})
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+    
+    resp = auth_client.delete(path = url)
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
 # Add member only for moderator or owner

@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
-from api.v1.users.permissions import IsMembershipOwner 
+from api.v1.users.permissions import IsMembershipOwner, IsMembershipOwnerOrModerator
 from api.v1.teams.serializers import TeamSreializer, MembershipSerializer
 from apps.core.teams.models import Team, Membership
 from apps.core.teams.choices import MembershipRoleChoice
@@ -23,26 +23,34 @@ class UserViewSet(views.UserViewSet):
     pass
 
 
-class UserTeamViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsAuthenticated]
+class UserTeamViewSet(viewsets.ModelViewSet):
     serializer_class = TeamSreializer
+    
+    def get_permissions(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            self.permission_classes = [IsAuthenticated]
+        elif self.action == 'update' or self.action == 'create':
+            self.permission_classes = [IsAuthenticated]
+        return super().get_permissions()
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context["user"] =  self.request.user
         return context
     
-    def retrieve(self, request, *args, **kwargs):
-        primary_key = kwargs.get("pk", None)
-        queryset = Team.objects.filter(team_in__user = request.user).distinct()
-        team = get_object_or_404(queryset, 
-                                 name = primary_key)
-        return Response(self.serializer_class(team, context = {"user": request.user}).data)
-    
     def get_queryset(self):
         user = self.request.user
         teams = Team.objects.filter(team_in__user = user).distinct()
         return teams
+    
+    def retrieve(self, request, *args, **kwargs):
+        primary_key = kwargs.get("pk", None)
+        queryset = Team.objects.filter(team_in__user = request.user).distinct()
+        team = get_object_or_404(queryset, 
+                                 pk = primary_key)
+        return Response(self.serializer_class(team, context = {"user": request.user}).data)
+    
+    
     
 ROLE_MAPPING = {
     "member": 'D',
@@ -51,10 +59,12 @@ ROLE_MAPPING = {
 }
     
 class UserTeamMembersViewSet(viewsets.ModelViewSet):
-    # queryset = Membership.objects.all()
+    permission_classes = [IsAuthenticated]
     serializer_class = MembershipSerializer
     serializer_team = False
     # --- PUBLIC ---
+    
+    ## --- CLASS METHODS ---
     
     def get_serializer_class(self):
         if not self.serializer_team:
@@ -82,9 +92,13 @@ class UserTeamMembersViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'list':
             self.permission_classes = [IsAuthenticated]
-        elif self.action == 'update' or self.action == 'create':
-            self.permission_classes = [IsAuthenticated, IsMembershipOwner]
+        elif self.action == 'update':
+            self.permission_classes.append(IsMembershipOwner)
+        elif self.action == 'create':
+            self.permission_classes.append(IsMembershipOwnerOrModerator)
         return super().get_permissions()
+    
+    ## --- HTTP METHODS ----
     
     def list(self, request, **kwargs):
         serializer = self.serializer_class(self.get_queryset(), many = True)
@@ -149,6 +163,17 @@ class UserTeamMembersViewSet(viewsets.ModelViewSet):
             
         return Response(another_user_serializer.data, status.HTTP_200_OK)
             
+            
+    def destroy(self, request, *args, **kwargs):
+        instance: Membership = self.get_object()
+        username = kwargs.get("pk", None)
+        if username == request.user.username:
+            return Response({"error": "You can't out of team while u r owner."},
+                            status = status.HTTP_400_BAD_REQUEST)
+        user = get_object_or_404(UserModel, username = username)
+        user_membership = get_object_or_404(self.get_queryset(), user = user)
+        self.perform_destroy(user_membership)
+        return Response(status = status.HTTP_204_NO_CONTENT)
             
 
     # --- PRIVATE ---

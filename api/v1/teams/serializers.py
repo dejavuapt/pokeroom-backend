@@ -24,10 +24,14 @@ class MembershipSerializer(serializers.ModelSerializer):
 
 class TeamSreializer(serializers.ModelSerializer):
     # members = MembershipSerializer(read_only=True, many=True)
+    owner_id = serializers.PrimaryKeyRelatedField(queryset = UserModel.objects.all(), 
+                                                  required = False, 
+                                                  default = None, 
+                                                  allow_null = True)
     
     class Meta:
         model = Team
-        fields = ('id','name', 'description', 'created_at', 'owner_id') 
+        fields = ('id','name', 'description', 'owner_id') 
         
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -35,14 +39,15 @@ class TeamSreializer(serializers.ModelSerializer):
         user = self.context.get('user')
         return {
             "team_id": _id,
-            'owner_id': str(representation.pop('owner_id')),
+            'owner': str(representation.pop('owner_id')),
             "data": representation,
             'role': str(MembershipRoleChoice(user.member_in.filter(team_id = instance).first().role).label)
         }
         
-        
     def create(self, validated_data):
-        owner_id = validated_data.get('owner_id')
+        owner_id = self.context.get('user').username
+        if validated_data.get('owner_id') is not None and validated_data.get('owner_id') != str(self.context.get('user').id):
+            raise ValueError(f"Can't create team for another user.")
         try:
             owner = UserModel.objects.get(username=owner_id)
         except UserModel.DoesNotExist:
