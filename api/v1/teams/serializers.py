@@ -1,32 +1,37 @@
 from rest_framework import serializers
-from apps.core.teams.models import Team, TeamMember
-from apps.core.teams.choices import TeamMemberRoleChoice
+from apps.core.teams.models import Team, Membership
+from apps.core.teams.choices import MembershipRoleChoice
 from django.contrib.auth import get_user_model
 
 UserModel = get_user_model()
 
 class MembershipSerializer(serializers.ModelSerializer):
-    # user_id = serializers.StringRelatedField(many=True, queryset = UserModel.objects.all(), read_only=False)
-    # team_id = serializers.PrimaryKeyRelatedField(read_only = True, many = True)
+    # user = serializers.PrimaryKeyRelatedField(queryset=UserModel.objects.all(), required=False)
+    # team = serializers.PrimaryKeyRelatedField(read_only = True, many = True)
     class Meta: 
-        model = TeamMember
-        fields = ('user_id', 'role', 'invited_at')
+        model = Membership
+        fields = ('user', 'role', 'invited_at')
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        _id = representation.pop('user_id')
-        representation['role'] = TeamMemberRoleChoice(representation.get('role')).label 
+        _id = representation.pop('user')
+        representation['role'] = str(MembershipRoleChoice(representation.get('role')).label)
         return {
-            "user_name": UserModel.objects.get(pk=_id).get_username(),
+            "username": UserModel.objects.get(pk=_id).get_username(),
             "data": representation
         }
 
+
 class TeamSreializer(serializers.ModelSerializer):
     # members = MembershipSerializer(read_only=True, many=True)
+    owner_id = serializers.PrimaryKeyRelatedField(queryset = UserModel.objects.all(), 
+                                                  required = False, 
+                                                  default = None, 
+                                                  allow_null = True)
     
     class Meta:
         model = Team
-        fields = ('id','name', 'description', 'owner_id', 'created_at',) 
+        fields = ('id','name', 'description', 'owner_id') 
         
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -34,15 +39,15 @@ class TeamSreializer(serializers.ModelSerializer):
         user = self.context.get('user')
         return {
             "team_id": _id,
+            'owner': str(representation.pop('owner_id')),
             "data": representation,
-            "user_data": {
-                'role': TeamMemberRoleChoice(user.member_in.filter(team_id = instance).first().role).label
-            }
+            'role': str(MembershipRoleChoice(user.member_in.filter(team_id = instance).first().role).label)
         }
         
-        
     def create(self, validated_data):
-        owner_id = validated_data.get('owner_id')
+        owner_id = self.context.get('user').username
+        if validated_data.get('owner_id') is not None and validated_data.get('owner_id') != str(self.context.get('user').id):
+            raise ValueError(f"Can't create team for another user.")
         try:
             owner = UserModel.objects.get(username=owner_id)
         except UserModel.DoesNotExist:
@@ -53,6 +58,5 @@ class TeamSreializer(serializers.ModelSerializer):
             owner_id = owner
         )
         team.save()
-        team.create_member_by_owner()
         return team
     

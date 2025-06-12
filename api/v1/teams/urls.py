@@ -5,7 +5,7 @@ from .views import TeamViewSet
 app_name = 'apps.core.teams'
 
 router = routers.DefaultRouter()
-router.register('', TeamViewSet, basename='t')
+router.register('', TeamViewSet, basename='teams')
 
 urlpatterns = [
     path('', include(router.urls))

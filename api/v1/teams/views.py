@@ -1,17 +1,14 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.db.models import Q
-# Create your views here.
-from rest_framework.views import APIView
-from rest_framework.decorators import api_view, action, permission_classes
+from rest_framework.decorators import action 
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from rest_framework import status
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 
-from .permissions import CurrentUserIsModeratorOrOwnerOrAdmin, CurrentUserIsOwnerOrAdmin
-from apps.core.teams.models import Team, TeamMember
-from apps.core.teams.choices import TeamMemberRoleChoice
+from .permissions import IsOwner, IsOwnerOrModerator 
+from rest_framework.permissions import IsAdminUser
+from apps.core.teams.models import Team, Membership
+from apps.core.teams.choices import MembershipRoleChoice
 
 from http import HTTPMethod
 
@@ -30,10 +27,27 @@ class TeamViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         if self.action == "members":
-            self.permission_classes = CurrentUserIsModeratorOrOwnerOrAdmin
+            self.permission_classes = [IsAdminUser, IsOwnerOrModerator]
         elif self.action == "destroy":
-            self.permission_classes = CurrentUserIsOwnerOrAdmin
+            self.permission_classes = [IsAdminUser, IsOwner]
         return super().get_permissions()
+   
+    def create(self, request, *args, **kwargs):
+        current_user, request_data = (request.user, request.data)
+        if hasattr(request_data, "owner_id"):
+            if current_user.id != request_data.get("owner_id"):
+                return Response({
+                    "message": "You don't can create a Team for another user."
+                }, status= status.HTTP_400_BAD_REQUEST)
+        else:
+            request_data.update({
+                "owner_id": current_user
+            })
+        serializer = self.get_serializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -67,8 +81,8 @@ class TeamViewSet(viewsets.ModelViewSet):
         team = get_object_or_404(Team, pk=pk)
         if request.method == HTTPMethod.POST:
             user = get_object_or_404(UserModel, id=request.data.get('user_id'))
-            role = request.data.get('role', TeamMemberRoleChoice.DEFAULT)
-            new_membership = TeamMember.objects.create(
+            role = request.data.get('role', MembershipRoleChoice.DEFAULT)
+            new_membership = Membership.objects.create(
                 user_id = user,
                 role = role,
                 team_id = team
