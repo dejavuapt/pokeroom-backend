@@ -31,6 +31,7 @@ def test_user_teams(auth_client: Client, user_data_factory) -> None:
     resp = auth_client.get(path = url)
     assert resp.status_code == status.HTTP_200_OK
     assert len(resp.data) == 1
+    temp_write_to_file(resp.data)
     
     url: str = reverse("users:user-teams-list") + team_name + "/"
     resp = auth_client.get(path = url)
@@ -40,6 +41,7 @@ def test_user_teams(auth_client: Client, user_data_factory) -> None:
 
 # View members by team 
 # GET OPTIONS /u/teams/{name}/members/
+# PATCH /u/teams/{name}/members/ - change role
 def test_view_team_members(auth_client, user_data_factory, team_factory, user_factory) -> None:
     user_data: dict = user_data_factory()
     user = User.objects.filter(username = user_data.get("username")).first()
@@ -48,12 +50,33 @@ def test_view_team_members(auth_client, user_data_factory, team_factory, user_fa
     team: Team = team_factory(name = team_name, owner_id = user)
     
     another_user = user_factory(username = "AnotherUser", email = "another@example.com")
-    team.add_member(another_user)
-    
-    url: str = reverse("users:team-members-list", kwargs={"name": team_name})
+    url: str = reverse("users:team-members-list", kwargs={"id": str(team.id)})
+
+    resp = auth_client.post(path = url, data = {"username": another_user.username}, format = 'json')
+    assert resp.status_code == status.HTTP_201_CREATED
+     
     resp = auth_client.get(path = url)
     assert resp.status_code == status.HTTP_200_OK
-
+    
+    url: str = reverse("users:team-members-list", kwargs={"id": str(team.id)}) + '%s/' % another_user.username
+    resp = auth_client.patch(path= url, data= {"role": "moderator"})
+    assert resp.status_code == status.HTTP_200_OK
+    assert Membership.objects.filter(team = team, user = another_user).first().role == 'M'
+    
+    url: str = reverse("users:team-members-list", kwargs={"id": str(team.id)}) + '%s/' % user.username
+    resp = auth_client.patch(path = url, data = {"role": "moderator"})
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+    
+    url: str = reverse("users:team-members-list", kwargs={"id": str(team.id)}) + '%s/' % another_user.username
+    resp = auth_client.patch(path = url, data = {"role": "owner"})
+    assert resp.status_code == status.HTTP_200_OK
+    assert Membership.objects.filter(team = team, user = another_user).first().role == 'O'
+    assert Membership.objects.filter(team = team, user = user).first().role == 'D'
+    assert Team.objects.filter(owner_id = another_user).first().name == team.name
+    assert Team.objects.filter(owner_id = user).count() == 0
+    
+    resp = auth_client.patch(path = url, data = {"role": "moderator"})
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
 
 # Add member only for moderator or owner
     

@@ -63,21 +63,20 @@ class Team(models.Model):
                                   team = self,
                                   role = MembershipRoleChoice.OWNER).save()
     
-    def set_new_owner(self, new_owner_user) -> 'Team':
-        if Membership.objects.filter(user = new_owner_user, team = self).exists() and self.owner_id != new_owner_user:
-            Membership.objects.filter(user = self.owner_id, team = self).update(role = MembershipRoleChoice.DEFAULT)
-            Membership.objects.filter(user = new_owner_user, team = self).update(role = MembershipRoleChoice.OWNER)
-            self.owner_id = new_owner_user
-            self.save()
-        else:
-            raise ValueError("You can't give owner's rights to a person who isn't on the team or yourself.")
-        return self
-    
-    def add_member(self, user, role = MembershipRoleChoice.DEFAULT) -> 'Team':
+    def set_new_owner(self, new_owner):
+        if not isinstance(new_owner, UserModel):
+            raise ValueError("New owner must be a User.")
+        
+        self.owner_id = new_owner
+        self.save()
+            
+
+    def add_member(self, user, role = MembershipRoleChoice.DEFAULT) -> 'Membership':
         if role is not MembershipRoleChoice.OWNER:
             tm = Membership.objects.create(team = self, user = user, role = role)
             tm.save()
-        return self
+            return tm
+        return None
         
     def get_team_name(self) -> str:
         return getattr(self, 'name')
