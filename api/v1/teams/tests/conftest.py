@@ -1,5 +1,4 @@
 import pytest
-from api.v1.users.views import UserViewSet
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from django.urls import reverse

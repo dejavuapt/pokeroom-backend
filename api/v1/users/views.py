@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from api.v1.users.permissions import IsMembershipOwner, IsMembershipOwnerOrModerator
+from api.v1.users.serializers import UserSerializer
 from api.v1.teams.serializers import TeamSreializer, MembershipSerializer
 from apps.core.teams.models import Team, Membership
 from apps.core.teams.choices import MembershipRoleChoice
@@ -19,8 +20,12 @@ logger = logging.getLogger('api')
 
 UserModel = get_user_model()
 
-class UserViewSet(views.UserViewSet):
-    pass
+class PokeroomUserViewSet(views.UserViewSet):
+    serializer_class = UserSerializer
+    
+    def create(self, request, *args, **kwargs):
+        logger.debug(f"{request.data}")
+        return super().create(request, *args, **kwargs)
 
 
 class UserTeamViewSet(viewsets.ModelViewSet):

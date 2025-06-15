@@ -100,6 +100,26 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.openapi.AutoSchema',
 }
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+    "loggers": {
+        "api": {
+            "level": "DEBUG",
+            "handlers": ["console"]
+        }
+    }
+}
+
 SIMPLE_JWT = {
    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
    'AUTH_HEADER_TYPES': ('Bearer',),
@@ -110,6 +130,7 @@ AUTH_USER_MODEL = 'users.PokeroomUser'
 # TODO: Remove djsor settings to settings config from here
 DJOSER = {
     'SERIALIZERS':{
+        'user_create': 'api.v1.users.serializers.UserCreateSerializer',
         'user' : 'api.v1.users.serializers.UserSerializer',
         'current_user': 'api.v1.users.serializers.CurrentUserSerializer',
     },
