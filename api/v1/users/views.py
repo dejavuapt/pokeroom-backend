@@ -43,6 +43,13 @@ class UserTeamViewSet(viewsets.ModelViewSet):
         context["user"] =  self.request.user
         return context
     
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
     def get_queryset(self):
         user = self.request.user
         teams = Team.objects.filter(team_in__user = user).distinct()

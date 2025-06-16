@@ -50,10 +50,9 @@ class Team(models.Model):
 
     def save(self, **kwargs):
         created: bool = self._state.adding
+        super().save(**kwargs)
         if created:
             self._crt_ownership()
-            
-        super().save(**kwargs)
         
     def __str__(self):
         return self.name
