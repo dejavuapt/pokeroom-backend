@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from apps.core.teams.models import Team, Membership
+from apps.core.teams.models import Team, Membership, TeamInviteLink
 from apps.core.teams.choices import MembershipRoleChoice
 from django.contrib.auth import get_user_model
 
@@ -60,3 +60,22 @@ class TeamSreializer(serializers.ModelSerializer):
         team.save()
         return team
     
+
+class InviteLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeamInviteLink
+        fields = ('token', 'expires_at')
+        extra_kwargs = {'token': {'read_only': True}, 
+                        'expires_at': {'read_only': True}}
+        
+    def create(self, validated_data):
+        tid = self.context.get('team_id')
+        if tid is None:
+            raise ValueError("Need team id to create token.")
+        if not TeamInviteLink.objects.filter(team_id = tid).exists():
+            til = TeamInviteLink.objects.create(team_id = Team.objects.get(id = tid))
+            til.save()
+        else:
+            raise ValueError("Invite link existed.")
+        
+        return til
