@@ -3,10 +3,12 @@ from apps.core.teams.models import Team, TeamInviteLink
 
 from rest_framework import status, viewsets, response, permissions, decorators
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from http import HTTPMethod as methods
 
 from typing import Optional, Any
+from datetime import timedelta
 
 User = get_user_model()
 
@@ -47,19 +49,48 @@ class TeamViewset(viewsets.ModelViewSet):
     # Request: {"token": "..."}
     @decorators.action(methods=[methods.POST], detail=False)
     def join(self, request, *args, **kwargs):
+        """
+        Handle operation to join into the team by token.
+        
+        Supported HTTP methods:
+        - POST: Add the user who sent the request to the team byt token.
+        
+        Args:
+            request (Request): The HTTP request object.
+            
+        Returns:
+            Response: 
+                - 200 Successfully joined the team. Returns the team's data.
+                - 400 The token was not provided in the request.
+                - 404 The token does not exist in the database.
+                - 406 The token has expired.
+                - 418 The user is already a member of the team.
+            
+        Raises:
+            Http404: If the token is not found (via get_object_or_404).
+        """
         token = request.data.get("token", None)
         if token is None:
-            return response.Response(status=status.HTTP_400_BAD_REQUEST, data={"Token hasn't provided"}) # TODO: Do looks greate
+            return response.Response(status=status.HTTP_400_BAD_REQUEST, data={"detail": "Token hasn't provided"})
         
         token_model: TeamInviteLink = get_object_or_404(TeamInviteLink.objects.all(), token=token)
+        if not self._is_valid_invite_link(token_model):
+            return response.Response(status=status.HTTP_406_NOT_ACCEPTABLE, data={"detail": "Token has expired."})
+        
         team_by_token: Team = get_object_or_404(Team.objects.all(), invite_link=token_model)
-        # TODO: Что если пользователь уже добавлен в команду -> можно делать проверку на уровне пермишиннов, либо простой респонс на то что "йоу ты есть тут"
-        # TODO: Что если токен невалидный, когда и как получать новый?
-        team_by_token.add_member(self.request.user)
+        member = team_by_token.add_member(self.request.user)
+        if member is None:
+            return response.Response({"detail": "Can't join in to the team you're on."}, status=status.HTTP_418_IM_A_TEAPOT)
+        
         return response.Response(
             self.serializer_class(team_by_token).data,
             status=status.HTTP_200_OK
         )
+        
+    @staticmethod
+    def _is_valid_invite_link(token: TeamInviteLink) -> bool:
+        return not (timezone.now() - token.expires_at) >= timedelta(days=1)
+            
         
    
    
@@ -79,6 +110,26 @@ class InvitelinkViewset(viewsets.GenericViewSet):
         methods.GET, methods.POST, methods.DELETE
     ], detail=False)
     def invite_link(self, request, **kwargs):
+        """
+        Handles operations related to team invite links.
+
+        Supported HTTP methods:
+        - GET: Retrieve the current invite link for the team.
+        - POST: Create a new invite link for the team using the provided data.
+        - DELETE: Delete the existing invite link.
+
+        Parameters:
+            request (Request): The HTTP request object.
+            **kwargs: Additional keyword arguments, including 'id' for identifying the team.
+
+        Returns:
+            Response: 
+                - 200 OK with serialized invite link data on GET.
+                - 201 Created with serialized data on successful POST.
+                - 204 No Content on successful DELETE.
+                - 405 Method Not Allowed for unsupported methods.
+        """
+
         if request.method == methods.GET:
             instance: TeamInviteLink = self.get_object()
             return response.Response(self.serializer_class(instance).data)
@@ -102,8 +153,6 @@ class InvitelinkViewset(viewsets.GenericViewSet):
                 status=status.HTTP_204_NO_CONTENT
             )
         
-        return response.Response(
-            status=status.HTTP_405_METHOD_NOT_ALLOWED,
-        )
+        return response.Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
             
      

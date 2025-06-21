@@ -70,7 +70,7 @@ class Team(models.Model):
             
 
     def add_member(self, user, role = MembershipRoleChoice.DEFAULT) -> 'Membership':
-        if role is not MembershipRoleChoice.OWNER:
+        if role is not MembershipRoleChoice.OWNER and not self.members.filter(id = user.id).exists():
             tm = Membership.objects.create(team = self, user = user, role = role)
             tm.save()
             return tm
