@@ -1,12 +1,13 @@
 from django.urls import path, include
 from rest_framework import routers
 from .views.members import MembersViewset
-from .views.team import TeamViewset
+from .views.team import TeamViewset, InvitelinkViewset
 
 app_name = 'apps.core.teams'
 
 router = routers.DefaultRouter()
 router.register('', TeamViewset, basename='user-teams')
+router.register(r'(?P<id>[0-9a-f-]+)', InvitelinkViewset, basename='team-invite-link')
 router.register(r'(?P<id>[0-9a-f-]+)/members', MembersViewset, basename='team-members')
 
 urlpatterns = [
