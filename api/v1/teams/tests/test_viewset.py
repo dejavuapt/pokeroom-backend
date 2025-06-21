@@ -1,7 +1,6 @@
 import pytest
 from apps.core.teams.models import Team, Membership
 from apps.core.teams.tests.test_fixutres import team_factory, user_factory
-from api.v1.teams.views import TeamViewSet
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient as Client
 from rest_framework import status
@@ -38,7 +37,7 @@ def complex(db, user_data_factory, team_factory, user_factory):
 def test_user_teams(auth_client: Client, complex) -> None:
     team = complex.get("user_team")
     
-    main_url:str = reverse("users:user-teams-list")
+    main_url:str = reverse("teams:user-teams-list")
      
     url: str = main_url
     resp = auth_client.get(path = url)
@@ -88,7 +87,7 @@ def test_view_team_members(auth_client, complex) -> None:
     team = complex.get("user_team") 
     another_user = complex.get("another_user")
     
-    main_url: str = reverse("users:team-members-list", kwargs={"id": str(team.id)})
+    main_url: str = reverse("teams:team-members-list", kwargs={"id": str(team.id)})
 
     resp = auth_client.post(path = main_url, data = {"username": another_user.username}, format = 'json')
     assert resp.status_code == status.HTTP_201_CREATED
