@@ -37,4 +37,7 @@ class TeamViewset(viewsets.ModelViewSet):
         team = get_object_or_404(queryset, 
                                  pk = primary_key)
         return response.Response(self.serializer_class(team, context = {"user": request.user}).data)
-    
+   
+   
+class TokenViewset(viewsets.GenericViewSet):
+    pass 

@@ -1,11 +1,10 @@
-from django.db import models, transaction
+import uuid
+from django.db import models
 from django.utils.translation import gettext as _
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-import uuid
-import secrets
-from datetime import timedelta, datetime
-from pokeroom_backend import constants
+
+from .interfaces.invite_link import InviteLinkInterface
 from .choices import MembershipRoleChoice
 
 UserModel = get_user_model()
@@ -121,90 +120,15 @@ class Membership(models.Model):
     def __str__(self):
         return f"{self.user.get_username()} in {self.team.get_team_name()} is {self.get_role_display()}"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# === LATE ===
-
-
-# # TODO: Move this method to upper. Because room need this interface too
-# # TODO: Write a logic to check all models with invitelinkinterface to drop a links that expires
-# # Abstract InviteLink Model
-# class InviteLinkInterface(models.Model):
-#     """ 
-#         Abstract model for storing invite links. \n
-#         Based on 16 bytes and default expires at 1 day (24h) from created (added in db) \n
-#         That class haven't `is_expires` field. If you need to check it: do attribute in your class or create logic.
-#     """
-#     # Lambda doesn't work in migrations:
-#     # Mb in future add factory of tokens
-#     _token_nbytes: int = constants.TOKEN_NBYTES     
+class TeamInviteLink(InviteLinkInterface):
     
-#     id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
-#     token = models.CharField(
-#         _("Token"),
-#         max_length = 100,
-#         default = "%s" % (secrets.token_urlsafe(_token_nbytes)),
-#         editable=False
-#     )
-#     created_at = models.DateTimeField(
-#         _("Token created date"),
-#         default = timezone.now,
-#         editable=False
-#     )
-#     expires_at = models.DateTimeField(
-#         _("Token expires date"),
-#         default = timezone.now() + timedelta(days=1),
-#         editable=False
-#     )
+    team_id = models.OneToOneField(
+        Team,
+        on_delete=models.CASCADE,
+        verbose_name=_("Team"),
+        related_name="invite_link"
+    )
     
-#     class Meta:
-#         abstract = True
-        
-#     def __str__(self):
-#         return '%s expires at %s' % (self.get_token(), self.get_expires_date())
-    
-#     def get_token(self) -> str:
-#         return getattr(self, 'token')
-    
-#     def get_expires_date(self) -> datetime:
-#         return getattr(self, 'expires_at')
-    
-    
-    
-    
-    
-# class TeamInviteLink(InviteLinkInterface):
-    
-#     team_id = models.OneToOneField(
-#         Team,
-#         on_delete=models.CASCADE,
-#         verbose_name=_("Team"),
-#         related_name="invite_link"
-#     )
-    
-#     class Meta:
-#         verbose_name = _("Team invitelink")
-#         verbose_name_plural = _("Team invitelinks")
+    class Meta:
+        verbose_name = _("Team invitelink")
+        verbose_name_plural = _("Team invitelinks")
