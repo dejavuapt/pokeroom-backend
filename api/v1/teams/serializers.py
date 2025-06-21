@@ -10,7 +10,7 @@ class MembershipSerializer(serializers.ModelSerializer):
     # team = serializers.PrimaryKeyRelatedField(read_only = True, many = True)
     class Meta: 
         model = Membership
-        fields = ('user', 'role', 'invited_at')
+        fields = ('user', 'team', 'role', 'invited_at')
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)

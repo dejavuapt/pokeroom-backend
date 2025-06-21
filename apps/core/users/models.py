@@ -19,14 +19,13 @@ class PokeroomUser(AbstractUser):
     last_name = models.CharField(_("last name"), max_length=150, blank=True)
     email = models.EmailField(
         _("email address"),
-        unique=True,
-        error_messages={
-            "unique": _("A user with that email already exists."),
-        },
+        default=None,
+        blank=True,
+        null=True
     )
     image_url = models.ImageField(_("image url"),null=True,default=None,blank=True)
     created_at = models.DateTimeField(_("created at"),default=timezone.now)
-    telegram_id = models.CharField("telegram id",max_length=20,null=True,default=None,blank=True)
+    telegram_id = models.CharField(_("telegram id"),max_length=20, default=None, null=True, blank=True)
     
     class Meta:
         verbose_name = "puser"
