@@ -4,7 +4,7 @@ from django.db import IntegrityError
 from apps.games.models import GameInstance, GameTypesChoices, TaskEvaluationGameState
 from apps.games.poker_planning.task_evaluation import TasksEvaluationState
 from apps.core.teams.models import Team
-from apps.games.engine import GameEngine
+from apps.games.core.engine import GameEngine
 
 
 UserModel = get_user_model()

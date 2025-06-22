@@ -1,6 +1,6 @@
-from apps.games.state import State
+from apps.games.core.state import State
 from typing import Optional, Union
-from apps.games.decorators import stage_action
+from apps.games.core.utils.decorators import stage_action
 
 
 class TasksEvaluationState(State):
