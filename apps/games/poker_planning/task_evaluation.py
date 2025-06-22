@@ -18,9 +18,9 @@ class TasksEvaluationState(State):
     def current_task(self) -> str:
         return self._instance.current_task
     
+    # TODO: Need check that task exist in a tasks
     @stage_action
-    @current_task.setter
-    def current_task(self, name: str) -> None:
+    def set_current_task(self, name: str) -> None:
         self._instance.current_task = name
         self._instance.save()
 

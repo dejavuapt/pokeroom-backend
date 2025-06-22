@@ -60,3 +60,7 @@ class TaskEvaluationGameState(GameState):
         self.current_task = None
         self.players_votes = {}
         self.save()
+        
+        
+class LobbyGameState(GameState):
+    pass
