@@ -12,7 +12,7 @@ class GameTypesChoices(models.TextChoices):
 
 class GameInstance(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    # team = models.ForeignKey(Team, on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE)
     config = models.JSONField(_("Config data"))
     created_at = models.DateTimeField(_("Created at"), default=timezone.now)
     type = models.CharField(_("Game type"),

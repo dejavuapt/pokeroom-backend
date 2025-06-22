@@ -1,10 +1,10 @@
 import pytest
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
-from apps.game.models import GameInstance, GameTypesChoices, TaskEvaluationGameState
-from apps.game.poker_planning.task_evaluation import TasksEvaluationState
+from apps.games.models import GameInstance, GameTypesChoices, TaskEvaluationGameState
+from apps.games.poker_planning.task_evaluation import TasksEvaluationState
 from apps.core.teams.models import Team
-from apps.game.engine import GameEngine
+from apps.games.engine import GameEngine
 
 
 UserModel = get_user_model()

@@ -1,8 +1,8 @@
 from typing import Optional, Any
 from .state_manager import StateManager
 from .poker_planning.task_evaluation import TasksEvaluationState
-from apps.game.common.lobbies import EndLobbyState, PokerLobbyState
-from apps.game.models import GameInstance, GameTypesChoices, TaskEvaluationGameState, LobbyGameState
+from apps.games.common.lobbies import EndLobbyState, PokerLobbyState
+from apps.games.models import GameInstance, GameTypesChoices, TaskEvaluationGameState, LobbyGameState
 
 class GameEngine:
     

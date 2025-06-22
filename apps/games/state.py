@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from .state_manager import StateManager
 from typing import Optional, Any
-from apps.game.models import GameState
+from apps.games.models import GameState
 
 class State(ABC):
     

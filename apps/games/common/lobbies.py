@@ -1,7 +1,7 @@
 
-from apps.game.state import State
-from apps.game.models import LobbyGameState
-from apps.game.decorators import stage_action
+from apps.games.state import State
+from apps.games.models import LobbyGameState
+from apps.games.decorators import stage_action
 
 
 class PokerLobbyState(State):
