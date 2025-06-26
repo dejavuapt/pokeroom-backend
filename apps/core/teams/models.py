@@ -3,9 +3,12 @@ from django.db import models
 from django.utils.translation import gettext as _
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 
 from .interfaces.invite_link import InviteLinkInterface
 from .choices import MembershipRoleChoice
+
+from typing import Union, Optional, Any
 
 UserModel = get_user_model()
 
@@ -83,6 +86,24 @@ class Team(models.Model):
     def get_owner_name(self) -> str:
         owner_attr: models.ForeignKey['AbstractUser'] = getattr(self, 'owner_id') # type: ignore
         return owner_attr.__str__()
+    
+    # def initialize_game(self, 
+    #                     host: AbstractUser, 
+    #                     config: dict[str, Any],
+    #                     type: 'GameTypesChoices'
+    #                     ) -> 'GameInstance': # type: ignore
+    #     if not self.members.filter(user = host).exists():
+    #         raise ValueError("Only member can run a game")
+        
+    #     if 'GameInstance'.objects.filter(team = self).exists():
+    #         raise ValueError("Game already run.")
+        
+    #     gi: 'GameInstance' = 'GameInstance'.objects.create(team=self,
+    #                                                     host_by=host,
+    #                                                     type=type,
+    #                                                     config=config)
+    #     gi.save()
+    #     return gi
     
     
 class Membership(models.Model):

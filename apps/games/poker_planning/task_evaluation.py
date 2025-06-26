@@ -1,5 +1,5 @@
 from apps.games.core.state import State
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from apps.games.core.utils.decorators import stage_action
 
 
@@ -13,6 +13,11 @@ class TasksEvaluationState(State):
     
     def out_(self) -> dict[str, Union[str, int]]:
         return self._instance.reveal_results()
+    
+    # def to_json(self):
+    #     result = {'name': self._name,
+    #               'instance_id': self._instance.id,}
+    #     return result
                 
     @property
     def current_task(self) -> str:
@@ -31,7 +36,7 @@ class TasksEvaluationState(State):
     @stage_action
     def calculate_current_task_estimate(self) -> None:
         if not len(self._instance.players_votes) == 0:
-            calculated_estimate: int = sum(self._instance.players_votes.value()) / len(self._instance.players_votes)
+            calculated_estimate: int = round(sum(self._instance.players_votes.values()) / len(self._instance.players_votes))
             self.update_task(self._instance.current_task, calculated_estimate)
             self._instance.reset()
             return
@@ -42,5 +47,25 @@ class TasksEvaluationState(State):
     def update_task(self, task: str, estimate: Union[str, int]) -> None:
         self._instance.update_result({task: estimate})
         
-
+        
+class PokerLobbyState(State):
+    _name = "Start lobby"
+    
+    def in_(self, context: Optional[Any] = None) -> None:
+        self._instance.update_result({"tasks": []})
+        return
+    
+    def out_(self) -> list[str]:
+        self._instance.completed = True
+        self._instance.save()
+        return self.tasks
+    
+    @property
+    def tasks(self) -> list[str]:
+        return self._instance.result_data.get("tasks")    
+    
+    @stage_action
+    def add_task(self, name: str) -> None:
+        self._instance.result_data.get("tasks").append(name)
+        self._instance.save()
 

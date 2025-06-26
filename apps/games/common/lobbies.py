@@ -2,29 +2,13 @@
 from apps.games.core.state import State
 from apps.games.models import LobbyGameState
 from apps.games.core.utils.decorators import stage_action
+from apps.games.core.utils.types import JSONDict
 
 
-class PokerLobbyState(State):
-    _name = "Start lobby"
     
-    def in_(self) -> None:
-        self._instance.result_data.update({"tasks": []})
-        return
-    
-    def out_(self) -> list[str]:
-        self._instance.completed = True
-        self._instance.save()
-        return self.tasks
-    
-    @property
-    def tasks(self) -> list[str]:
-        return self._instance.result_data.get("tasks")    
-    
-    @stage_action
-    def add_task(self, name: str) -> None:
-        self._instance.result_data["tasks"].append(name)
-        self._instance.save()
-    
+    # def to_json(self) -> JSONDict:
+    #     return {"name": self._name,
+    #             "instance_id": self._instance.id }
     
 
 class EndLobbyState(State):

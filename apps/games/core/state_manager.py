@@ -1,6 +1,6 @@
 from queue import Queue
 from typing import TypeVar, Union, Optional, Any
-import logging
+import logging, importlib
 
 from .state import State
 from apps.games.models import GameState, GameInstance
@@ -24,20 +24,27 @@ class StateManager:
         
     def load(self, config: dict[str, Any]) -> None:
         self._states = config.pop("sequence") if config.get("sequence", None) else None
-        self.next()
         self._config = config
+        self.next()
     
     def get_current_config(self) -> dict[str, Any]:
         return {
             "sequence": self._states,
             "data": self._current_state.instance.result_data
         }
+        
+    def _re_class(self, module:str) -> Any:
+        obj, name = module.rsplit('.', 1)
+        return getattr(importlib.import_module(obj), name)
     
     def next(self) -> Optional[State_T]:
         if self._current_state is not None:
             self.finish_state()
         
-        state, gamestate = self._states.pop(0) if self._states else (None, None)
+        module_state, mode_game_state = self._states.pop(0) if self._states else (None, None)
+        state = self._re_class(module_state)()
+        gamestate = self._re_class(mode_game_state)
+        
         
         logger.debug(f"Transition from {type(self._current_state).__name__} to {type(state).__name__}")
         
@@ -59,15 +66,15 @@ class StateManager:
         logger.debug(f"Start state `{self._current_state.name}`, with config: {self._config}")
         self._current_state.in_(self._config.get("data", None))
         
-    #action like "add-user-estimate"
+    #action like "add-user-estimate" IT'S WORKS HAHHAH
     def handle_action(self, action: str, data: dict[str,Any]) -> None:
         _avaliable_actions = self._available_current_actions()
         if action in _avaliable_actions.keys():
-            _avaliable_actions.get(action)(self._current_state)(*data) # Оень запутано, нужно проверять
+            _avaliable_actions.get(action)(self._current_state, **data) 
     
     def finish_state(self) -> None:
         if self._current_state is not None:
-            self._config.update({"data": self._current_state.out_})
+            self._config.update({"data": self._current_state.out_()})
             
         logger.debug(f"End state `{self._current_state.name}`, with config: {self._config}")
         
