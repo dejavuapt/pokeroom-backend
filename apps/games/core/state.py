@@ -2,7 +2,7 @@ import inspect
 
 from abc import abstractmethod, ABC
 from typing import Optional, Any
-from apps.games.models import GameState
+from apps.games.models.models import GameState
 from apps.games.core.utils.types import JSONDict
 
 

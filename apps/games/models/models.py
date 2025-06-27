@@ -25,7 +25,7 @@ class GameRoleChoices(models.TextChoices):
 
 class GameInstance(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="game")
     host_by = models.ForeignKey(User,
                                 verbose_name=_("Hoted by"),
                                 on_delete=models.CASCADE,
@@ -93,34 +93,3 @@ class GameState(models.Model):
     def update_result(self, data: dict) -> None:
         self.result_data.update(data)
         self.save()
-        
-        
-class TaskEvaluationGameState(GameState):
-    tasks = ArrayField(models.CharField(), default=list, blank=True)
-    current_task = models.CharField(_("Current task"), null=True, blank=True)
-    players_votes = models.JSONField(_("Players votes"), default=dict)
-    
-    def init_tasks(self, tasks: list[str] = None):
-        self.tasks = tasks
-        self.save()
-    
-    def is_all_voted(self, players_names: list[str]):
-        return set(self.players_votes.keys()) >= set(players_names)
-    
-    def submit_vote(self, username: str, value: int):
-        self.players_votes.update({username: value})
-        self.save()
-    
-    def reveal_results(self):
-        self.completed = True
-        self.reset()
-        return self.result_data
-    
-    def reset(self):
-        self.current_task = None
-        self.players_votes = {}
-        self.save()
-        
-        
-class LobbyGameState(GameState):
-    pass
