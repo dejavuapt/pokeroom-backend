@@ -18,6 +18,7 @@ DEBUG = bool(os.environ.get('DJANGO_DEBUG', 0))
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', ['127.0.0.1']).split(',')
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -60,6 +61,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'pokeroom_backend.wsgi.application'
+ASGI_APPLICATION = 'pokeroom_backend.asgi.application'
 
 
 # Database
@@ -73,6 +75,13 @@ DATABASES = {
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
         'HOST': os.environ.get('DB_HOST'),
         'PORT': os.environ.get('DB_PORT'),
+    }
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.%s" % (os.environ.get('CACHE_BACKEND', 'redis.RedisCache')),
+        "LOCATION": os.environ.get('CACHE_LOCATION'),
     }
 }
 

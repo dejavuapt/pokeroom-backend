@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 State_T = TypeVar('State_T', bound="State")
 GameState_T = TypeVar('GameState_T', bound="GameState")
 
+
+# TODO: Idea: Move GameManager\Engine etc. into library. States of project should be in a project, not in a game logic.
 class GameManager:
     """
     GameManager is a class to manipulate with game's states. 

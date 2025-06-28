@@ -9,6 +9,15 @@ services:
       - ./storage/postgres-main:/var/lib/postgresql/data
     ports:
       - 5432:5432
+  
+  redis:
+    image: redis:8.0.2
+    container_name: pokeroom-redis
+    restart: always
+    volumes:
+      - ./storage/redis-main:/data
+    ports:
+      - 6379:6379
 
   django:
     image: pokeroom-django-docker
