@@ -22,6 +22,7 @@ Pokeroom-backend is a RESTful API backend part of a service called Pokeroom. The
 - the role system in teams: Owner, Moderator and Member;
 - joining the team with a token key and ofcs generate token by owner;
    `api/v1/t/join` & `api/v1/t/<id>/invite_link`
+- easy way to create a new game with `FSM` and `Template method` pattern;
 
 # Installing
 
