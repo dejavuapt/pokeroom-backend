@@ -25,6 +25,7 @@ class GameManager:
                  instance: Optional[GameInstance] = None) -> None:
         self._game_instance = instance
         self._load(config)
+        self.state_forward()
     
     def state_forward(self) -> Optional[State_T]:
         """
@@ -33,20 +34,25 @@ class GameManager:
         """
         if self._current_state is not None:
             self._cancel()
+            self._update_instance_config()
         
         state_name, gamestate_name = self._states.pop(0) if self._states else (None, None)
         state = self._re_class("states", state_name)()
         gamestate = self._re_class("models", gamestate_name)
         logger.debug(f"Transition from {type(self._current_state).__name__} to {type(state).__name__}")
         
-        gs = gamestate.objects.create(
-            game=self._game_instance,
-            name=state.name,
-        )
-        gs.save()
-        
         self._current_state = state
-        self._current_state.instance = gs
+        
+        if gs:= gamestate.objects.filter(game=self._game_instance).first():
+            self._current_state.instance = gs
+        else:
+            gs = gamestate.objects.create(
+                game=self._game_instance,
+                name=state.name,
+            )
+            gs.save()
+            self._current_state.instance = gs
+            
         self._current_state.context = self
         
         self._open()
@@ -66,7 +72,6 @@ class GameManager:
     def _load(self, config: JSONDict) -> None:
         self._states = config.pop("sequence") if config.get("sequence", None) else None
         self._config = config
-        self.state_forward()
         
     def _re_class(self, module: str, obj: str) -> Any:
         part_module: str = "%s.%s" % (self._config.get("settings").get("path"), 
@@ -84,8 +89,14 @@ class GameManager:
     def _cancel(self) -> None:
         """
         Cancel current state. \n
-        Call `out_` method in state and get output data to move it in another state.
+        Call `out_` method in state and get output data to move it in another state.\n
+        Update gameinstance's config
         """
         if self._current_state is not None:
             self._config.update({"data": self._current_state.out_()})
         logger.debug(f"End state `{self._current_state.name}`, with config: {self._config}")
+        
+    def _update_instance_config(self) -> None:
+        new_config: JSONDict = self._config
+        new_config.update({"sequence": self._states})
+        self._game_instance.update_config(new_config)

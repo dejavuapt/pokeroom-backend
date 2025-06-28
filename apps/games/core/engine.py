@@ -1,6 +1,7 @@
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, Final
 from apps.games.models.models import GameInstance, GameTypesChoices
 from apps.games.core.game_manager import GameManager
+from apps.games.core.utils.types import JSONDict
 from apps.core.teams.models import Team
 
 from django.contrib.auth import get_user_model, models
@@ -11,70 +12,62 @@ NoneError = tuple[None, str]
 User = get_user_model()
 
 class GameEngine:
-    _games_path: str = "apps.games"
-    TYPES_MAPPING = {
+    _games_path: Final[str] = "apps.games"
+    TYPES_MAPPING: Final[dict[str, str]] = {
         GameTypesChoices.POKER: "poker_planning",
         GameTypesChoices.RETRO: "retrospective"
     }
     
+    _game_manager: Optional[GameManager] = None
+    _game_instance: Optional[GameInstance] = None
     
-    _state_manager: Optional[GameManager] = None
-    # def __init__(self, game_config: dict[str,Any]):
-    
-    
-    def bootstrap(self, 
-                  game_type: GameTypesChoices,
-                  team: Union[Team, str],
-                  init_user: Union[models.AbstractUser, str]
-                  ) -> Union[GameInstance, NoneError]:
+    def bootstrap_or_resume(self, 
+                            team: Union[Team, str],
+                            game_type: Optional[GameTypesChoices] = None,
+                            init_user: Optional[Union[models.AbstractUser, str]] = None
+                  ) -> Union['GameEngine', NoneError]:
         if isinstance(team, str):
             try:
                 team = Team.objects.get(pk = team)
             except Team.DoesNotExist as ex:
                 return None, str(ex)
-                
+        
+        if game_type is None or init_user is None:
+            try:
+                gi = GameInstance.objects.get(team = team)
+                self._game_instance = gi
+                self._game_manager = GameManager(
+                    config=gi.config,
+                    instance=self._game_instance
+                )
+                return gi
+            except GameInstance.DoesNotExist as ex:
+                return None, str(ex)
+        
         if isinstance(init_user, str):
             try:
                 init_user = User.objects.get(pk = init_user)
             except User.DoesNotExist as ex:
                 return None, str(ex)
-            
-        config = self._get_config(game_type=game_type)
         
         self._game_instance = GameInstance.objects.create(team=team,
                                                           host_by=init_user,
-                                                          config=config,
+                                                          config=self._get_config(game_type=game_type),
                                                           type=game_type)
         self._game_instance.save()
         
-        self._state_manager = GameManager(config=self._get_config(game_type=game_type), 
-                                          instance=self._game_instance)
+        self._game_manager = GameManager(config=self._get_config(game_type=game_type), 
+                                         instance=self._game_instance)
         
-        return self._game_instance
-        
-    def resume(self, 
-               team: Union[Team, str]
-               ) -> Optional[Union[GameInstance, NoneError]]:
-        if isinstance(team, str):
-            try:
-                team = Team.objects.get(pk = team)
-            except Team.DoesNotExist as ex:
-                return None, str(ex)
-            
-        # i thk it doesn't work
-        if gi := GameInstance.objects.filter(team = team).first():
-            self._game_instance = gi
-            self._state_manager = GameManager(
-                config=gi.config,
-                instance=self._game_instance
-            )
-        else:
-            return None
-            
-        return gi
+        return self
     
-    # TODO: Надо упростить. Для каждой игры делать свою подпапку, настраивать конфиг приложения и в конфиг инстанса
-    # нужно добавлять общий путь, который в менеджере будет брать данные
+    def do(self, action: str, data: JSONDict) -> Optional[Union['GameEngine', NoneError]]:
+        try:
+            self._game_manager.handle_action(action, data)
+            return self
+        except:
+            return None, str("Something was wrong...")
+    
     def _get_config(self, game_type: GameTypesChoices) -> dict[str, Any]:
         if game_type == GameTypesChoices.POKER:
             return {

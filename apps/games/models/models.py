@@ -4,6 +4,7 @@ from django.utils import timezone
 from apps.core.teams.models import Team
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth import get_user_model
+from apps.games.core.utils.types import JSONDict
 
 User = get_user_model()
 
@@ -53,6 +54,10 @@ class GameInstance(models.Model):
         if self.players.filter(user = user).exists():
             self.players.filter(role = GameRoleChoices.FACILITATOR).update(role = GameRoleChoices.PLAYER)
             self.players.filter(user = user).update(role = GameRoleChoices.FACILITATOR)
+    
+    def update_config(self, new_config: JSONDict) -> None:
+        self.config = new_config
+        self.save()
             
     
 class Player(models.Model):
