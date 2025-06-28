@@ -56,10 +56,8 @@ def test_game_pipline(team_factory, user_factory):
     
     assert ppModels.TaskEvaluationGameState.objects.first().current_task == "Task1"
     
-    engine\
-        .do("add-user-estimate", {"username": "petya", "estimate": 1})\
-        .do("add-user-estimate", {"username": "vasya", "estimate": 8})
-    
+    engine.do("add-user-estimate", {"username": "petya", "estimate": 1})
+    engine.do("add-user-estimate", {"username": "vasya", "estimate": 8})
     
     ath_engine = GameEngine()
     if ath_instance := ath_engine.bootstrap_or_resume(team=team):
@@ -71,15 +69,19 @@ def test_game_pipline(team_factory, user_factory):
     
     ath_engine = GameEngine()
     if ath_instance := ath_engine.bootstrap_or_resume(team=team):
-        ath_engine.do('calculate-current-task-estimate', {})
+        ath_engine.do('calculate-current-task-estimate')
     
     assert ppModels.TaskEvaluationGameState.objects.first().current_task == None
     assert ppModels.TaskEvaluationGameState.objects.first().players_votes == {}
     assert ppModels.TaskEvaluationGameState.objects.first().result_data == {"Task1": 5}
     
-    # # --- disconnect
-    # another_client = GameEngine()
-    # same_instance = another_client.resume(team=team)
-    # if same_instance:
-    #     assert type(another_client._game_manager._current_state) == TasksEvaluationState
+    state = engine._game_manager.state_forward()
+    print(type(state))
+    assert type(engine._game_manager._current_state.instance) is ppModels.LobbyGameState
+    assert ppModels.TaskEvaluationGameState.objects.first().completed
     
+    # Мне лень дописывать это, буду править в рабочем порядке
+    state = ath_engine._game_manager.state_forward()
+    ath_engine = GameEngine()
+    if ath_instance := ath_engine.bootstrap_or_resume(team=team):
+        print(ath_engine._game_manager._current_state.instance.result_data)

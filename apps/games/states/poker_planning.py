@@ -12,12 +12,7 @@ class TasksEvaluationState(State):
         self._instance.init_tasks(tasks)
     
     def out_(self) -> dict[str, Union[str, int]]:
-        return self._instance.reveal_results()
-    
-    # def to_json(self):
-    #     result = {'name': self._name,
-    #               'instance_id': self._instance.id,}
-    #     return result
+        return self._instance.reveal_results() 
                 
     @property
     def current_task(self) -> str:
@@ -69,3 +64,19 @@ class PokerLobbyState(State):
         self._instance.result_data.get("tasks").append(name)
         self._instance.save()
 
+class PokerLobbyEndState(State):
+    _name = "End lobby"
+    
+    def in_(self, past_result = None):
+        self._instance.update_result({"solved_tasks": past_result})
+        return
+    
+    def out_(self):
+        self._instance.completed = True
+        self._instance.save()
+        return self.solved_tasks
+    
+    @property
+    def solved_tasks(self) -> dict[str, Union[str, int]]:
+        return self._instance.result_data.get("solved_tasks", None)
+    

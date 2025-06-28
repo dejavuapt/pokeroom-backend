@@ -1,9 +1,10 @@
 from queue import Queue
 from typing import TypeVar, Union, Optional, Any
 import logging, importlib
+import copy
 
 from .state import State
-from apps.games.models.models import GameState, GameInstance
+from apps.games.models.models import GameState, GameInstance, GameInstanceStatusChoices
 from apps.games.core.utils.types import JSONDict
 
 logger = logging.getLogger(__name__)
@@ -32,10 +33,19 @@ class GameManager:
         `state_forward` method automaticly finished previous state and start next state. \n
         Initialize gamestate object from model. Get next state and excluded it from `sequence` list.
         """
+        if not self._states:
+            if self._current_state is not None:
+                self._cancel()
+            self._game_instance.status = GameInstanceStatusChoices.FINISED
+            self._game_instance.save()
+            return None
+        
         if self._current_state is not None:
             self._cancel()
-            self._update_instance_config()
-        
+        else:
+            self._game_instance.status = GameInstanceStatusChoices.STARTED
+            self._game_instance.save()
+
         state_name, gamestate_name = self._states.pop(0) if self._states else (None, None)
         state = self._re_class("states", state_name)()
         gamestate = self._re_class("models", gamestate_name)
@@ -70,8 +80,9 @@ class GameManager:
             _avaliable_actions.get(action)(self._current_state, **data) 
     
     def _load(self, config: JSONDict) -> None:
-        self._states = config.pop("sequence") if config.get("sequence", None) else None
-        self._config = config
+        conf = copy.deepcopy(config)
+        self._states = conf.pop("sequence") if conf.get("sequence", None) else None
+        self._config = conf
         
     def _re_class(self, module: str, obj: str) -> Any:
         part_module: str = "%s.%s" % (self._config.get("settings").get("path"), 
@@ -94,6 +105,7 @@ class GameManager:
         """
         if self._current_state is not None:
             self._config.update({"data": self._current_state.out_()})
+        self._update_instance_config()
         logger.debug(f"End state `{self._current_state.name}`, with config: {self._config}")
         
     def _update_instance_config(self) -> None:

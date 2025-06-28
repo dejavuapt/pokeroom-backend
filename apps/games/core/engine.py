@@ -1,5 +1,5 @@
 from typing import Optional, Any, Union, Final
-from apps.games.models.models import GameInstance, GameTypesChoices
+from apps.games.models.models import GameInstance, GameTypesChoices, GameInstanceStatusChoices
 from apps.games.core.game_manager import GameManager
 from apps.games.core.utils.types import JSONDict
 from apps.core.teams.models import Team
@@ -35,12 +35,12 @@ class GameEngine:
         if game_type is None or init_user is None:
             try:
                 gi = GameInstance.objects.get(team = team)
-                self._game_instance = gi
-                self._game_manager = GameManager(
-                    config=gi.config,
-                    instance=self._game_instance
-                )
-                return gi
+                if gi.status != GameInstanceStatusChoices.CLOSED:
+                    self._game_instance = gi
+                    self._game_manager = GameManager(config=gi.config,
+                                                     instance=gi)
+                    return gi
+                return None, "Game is closed"
             except GameInstance.DoesNotExist as ex:
                 return None, str(ex)
         
@@ -53,7 +53,8 @@ class GameEngine:
         self._game_instance = GameInstance.objects.create(team=team,
                                                           host_by=init_user,
                                                           config=self._get_config(game_type=game_type),
-                                                          type=game_type)
+                                                          type=game_type,
+                                                          status=GameInstanceStatusChoices.STARTED)
         self._game_instance.save()
         
         self._game_manager = GameManager(config=self._get_config(game_type=game_type), 
@@ -61,9 +62,9 @@ class GameEngine:
         
         return self
     
-    def do(self, action: str, data: JSONDict) -> Optional[Union['GameEngine', NoneError]]:
+    def do(self, action: str, data: Optional[JSONDict] = None) -> Optional[Union['GameEngine', NoneError]]:
         try:
-            self._game_manager.handle_action(action, data)
+            self._game_manager.handle_action(action, data if data else {})
             return self
         except:
             return None, str("Something was wrong...")
@@ -77,7 +78,8 @@ class GameEngine:
                 },
                 "sequence": [
                     ('PokerLobbyState', 'LobbyGameState'),
-                    ('TasksEvaluationState', 'TaskEvaluationGameState')
+                    ('TasksEvaluationState', 'TaskEvaluationGameState'),
+                    ('PokerLobbyEndState', 'LobbyGameState')
                     ],
                 "rule": ['1', '2', '3', '5', '8', 'c', 'l']
             }
