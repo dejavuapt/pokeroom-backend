@@ -62,6 +62,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'pokeroom_backend.wsgi.application'
 ASGI_APPLICATION = 'pokeroom_backend.asgi.application'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.getenv("REDIS_HOST"), os.getenv("REDIS_PORT"))],
+        },
+    },
+}
 
 
 # Database

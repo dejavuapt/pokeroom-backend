@@ -80,8 +80,11 @@ class TeamViewset(viewsets.ModelViewSet):
         team_by_token: Team = get_object_or_404(Team.objects.all(), invite_link=token_model)
         member = team_by_token.add_member(self.request.user)
         if member is None:
-            return response.Response({"detail": "Can't join in to the team you're on."}, status=status.HTTP_418_IM_A_TEAPOT)
+            return response.Response({"detail": "Can't join into the team you're on."}, status=status.HTTP_418_IM_A_TEAPOT)
         
+        # channels_layer.group_send(team_id: str, { action: team_member_joined, member: member_serialize(member) })
+        
+         
         return response.Response(
             self.serializer_class(team_by_token).data,
             status=status.HTTP_200_OK
