@@ -49,7 +49,10 @@ class GameEngine:
                 init_user = User.objects.get(pk = init_user)
             except User.DoesNotExist as ex:
                 return None, str(ex)
-        
+
+        if GameInstance.objects.filter(team=team).exists():
+            raise ValueError("Game already started")
+
         self._game_instance = GameInstance.objects.create(team=team,
                                                           host_by=init_user,
                                                           config=self._get_config(game_type=game_type),
@@ -62,12 +65,16 @@ class GameEngine:
         
         return self
     
+    def resume_by_gi(self, instance: GameInstance) -> 'GameEngine':
+        self._game_instance = instance
+        self._game_manager = GameManager(config=self._game_instance.config,
+                                         instance=self._game_instance)
+        return self
+    
     def do(self, action: str, data: Optional[JSONDict] = None) -> Optional[Union['GameEngine', NoneError]]:
-        try:
-            self._game_manager.handle_action(action, data if data else {})
+        if self._game_manager.handle_action(action, data if data else {}):
             return self
-        except:
-            return None, str("Something was wrong...")
+        raise ValueError("That method doesn't exist.")
     
     def _get_config(self, game_type: GameTypesChoices) -> dict[str, Any]:
         if game_type == GameTypesChoices.POKER:

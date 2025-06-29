@@ -38,7 +38,7 @@ class GameInstance(models.Model):
                               max_length=1,
                               choices=GameInstanceStatusChoices.choices,
                               default=GameInstanceStatusChoices.OPEN)
-    config = models.JSONField(_("Config data"))
+    config = models.JSONField(_("Config data"), default=dict)
     created_at = models.DateTimeField(_("Created at"), default=timezone.now)
     
     def save(self, **kwargs):

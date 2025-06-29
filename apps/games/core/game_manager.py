@@ -64,14 +64,14 @@ class GameManager:
             )
             gs.save()
             self._current_state.instance = gs
+            self._open()
             
         self._current_state.context = self
         
-        self._open()
         
         return self._current_state
     
-    def handle_action(self, action: str, data: JSONDict) -> None:
+    def handle_action(self, action: str, data: JSONDict) -> bool:
         """
         Call action on a current state. Action means that method has decorator "state_action".\n
         Example: if method called like `do_something` with params (params1: str, params2: str, ...)
@@ -79,7 +79,9 @@ class GameManager:
         """
         _avaliable_actions = self._current_state.avaliable_actions()
         if action in _avaliable_actions.keys():
-            _avaliable_actions.get(action)(self._current_state, **data) 
+            _avaliable_actions.get(action)(self._current_state, **data)
+            return True
+        return False
     
     def _load(self, config: JSONDict) -> None:
         conf = copy.deepcopy(config)
