@@ -7,6 +7,9 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from http import HTTPMethod as methods
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
 from typing import Optional, Any
 from datetime import timedelta
 
@@ -83,8 +86,18 @@ class TeamViewset(viewsets.ModelViewSet):
             return response.Response({"detail": "Can't join into the team you're on."}, status=status.HTTP_418_IM_A_TEAPOT)
         
         # channels_layer.group_send(team_id: str, { action: team_member_joined, member: member_serialize(member) })
-        
-         
+        #joBo6Vf0neOb9WjPeNz0BA
+        cl = get_channel_layer()
+        # serialzed_member = MembershipSerializer(member)
+        # serialzed_member.is_valid(raise_exception=True)
+        # serialzed_member.save()
+        async_to_sync(cl.group_send)(f"team_{str(team_by_token.id)}", 
+                                                      {'type': 'member.joined',
+                                                       'member': {
+                                                           'name': member.user.username,
+                                                           'role': member.role,
+                                                       }})
+        # BUG: Чето перестал проходить после добавления каналов, нужно решить это как-то
         return response.Response(
             self.serializer_class(team_by_token).data,
             status=status.HTTP_200_OK

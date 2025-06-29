@@ -29,6 +29,9 @@ class TeamConsumer(AsyncWebsocketConsumer):
         name = event.get('name')
         
         await self.send(text_data=json.dumps({'id': id, 'name': name}))
+        
+    async def member_joined(self, event):
+        await self.send(text_data=json.dumps(event.get('member')))
     
     @database_sync_to_async
     def get_team_name_by_id(self, id) -> str:
