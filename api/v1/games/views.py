@@ -145,7 +145,27 @@ class PokergameDoViewset(viewsets.GenericViewSet):
     @decorators.action(methods=[HTTPMethod.GET, HTTPMethod.POST], 
                        detail=False)
     def current_task(self, request, *args, **kwargs) -> response.Response:
-        pass
+        
+        if request.method == HTTPMethod.POST:
+            task_label: str = request.data.get("task", None)
+            gi: Optional[GameInstance] = self.get_object()
+            if task_label and gi:
+                GameEngine().resume_by_gi(gi).do('set-current-task', 
+                                                 {"name": task_label})
+                return response.Response({"detail": f"Success set current task with title {task_label}."},
+                                         status=status.HTTP_200_OK)
+            return response.Response({"detail": "Not provided title of task or game not started"},
+                                     status=status.HTTP_400_BAD_REQUEST)
+        
+        if request.method == HTTPMethod.GET:
+           if gi:= self.get_queryset().first():
+               current_task = GameEngine().resume_by_gi(gi)._game_manager._current_state.current_task
+               return response.Response({"current_task": current_task},
+                                        status=status.HTTP_200_OK)
+            
+        return response.Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+            
+
     
     @decorators.action(methods=[HTTPMethod.GET, HTTPMethod.POST], 
                        detail=False)
