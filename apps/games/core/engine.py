@@ -6,8 +6,6 @@ from apps.games.core.utils.types import JSONDict
 
 from django.contrib.auth import get_user_model, models
 
-ErrorDict = dict[str, str]
-NoneError = tuple[None, str]
 
 User = get_user_model()
 
@@ -18,48 +16,69 @@ class GameEngine:
         GameTypesChoices.RETRO: "retrospective"
     }
     
-    _game_manager: Optional[GameManager] = None
-    _game_instance: Optional[GameInstance] = None
+    _manager: Optional[GameManager] = None
+    _instance: Optional[GameInstance] = None        
     
-    def bootstrap_or_resume(self, 
-                            game_type: Optional[GameTypesChoices] = None,
-                            init_user: Optional[Union[models.AbstractUser, str]] = None
-                  ) -> Union['GameEngine', NoneError]:
-        
+    @property
+    def game_instance(self) -> Optional[GameInstance]:
+        return self._instance
+    
+    @property
+    def manager(self) -> Optional[GameManager]:
+        return self._manager
+    
+    @classmethod
+    def build(cls, 
+              game_type: Optional[GameTypesChoices] = None,
+              init_user: Optional[Union[models.AbstractUser, str]] = None,
+              *,
+              props: Optional[JSONDict] = None) -> GameEngine:
+        """
+        Build method allows to create a GameInstance and GameManager. 
+        """
         if isinstance(init_user, str):
             try:
                 init_user = User.objects.get(pk = init_user)
             except User.DoesNotExist as ex:
                 return None, str(ex)
+            
+        slf: GameEngine = cls()
 
-        if GameInstance.objects.filter(host_by=init_user).exists():
-            raise ValueError("Game already started")
-
-        self._game_instance = GameInstance.objects.create(host_by=init_user,
-                                                          config=self._get_config(game_type=game_type),
-                                                          type=game_type,
-                                                          status=GameInstanceStatusChoices.STARTED)
-        self._game_instance.save()
+        config: JSONDict = slf._setup_config(game_type, props)
+        slf._instance = slf._init_instance(init_user, config, game_type)
+        slf._manager = slf._init_manager(config)
         
-        self._game_manager = GameManager(config=self._get_config(game_type=game_type), 
-                                         instance=self._game_instance)
-        
-        return self
+        return slf
     
-    def resume_by_gi(self, instance: GameInstance) -> GameEngine:
-        self._game_instance = instance
-        self._game_manager = GameManager(config=self._game_instance.config,
-                                         instance=self._game_instance)
-        return self
+    @classmethod
+    def resume(cls, instance: GameInstance) -> GameEngine:
+        slf: GameEngine = cls()
+        slf._instance = instance
+        slf._manager = GameManager(config=slf._instance.config, instance=slf._instance)
+        return slf
     
-    def do(self, action: str, data: Optional[JSONDict] = None) -> Optional[Union['GameEngine', NoneError]]:
-        if self._game_manager.handle_action(action, data if data else {}):
+    def do(self, action: str, data: Optional[JSONDict] = None) -> GameEngine:
+        if self._manager.handle_action(action, data if data else {}):
             return self
-        raise ValueError("That method doesn't exist.")
+        raise ValueError(f"Method {action} doesn't exist.")
     
-    def _get_config(self, game_type: GameTypesChoices) -> dict[str, Any]:
+    def _init_instance(self, host: models.AbstractUser, 
+                            config: JSONDict, game_type: GameTypesChoices) -> GameInstance:
+        gi = GameInstance.objects.create(host_by=host, 
+                                         config=config, 
+                                         type=game_type, 
+                                         status=GameInstanceStatusChoices.STARTED)
+        gi.save()
+        return gi
+    
+    def _init_manager(self, config: JSONDict) -> GameManager:
+        gm: GameManager = GameManager(config, self._instance)
+        return gm
+    
+    def _setup_config(self, game_type: GameTypesChoices, 
+                      props: JSONDict | None = None) -> JSONDict:
         if game_type == GameTypesChoices.POKER:
-            return {
+            config: JSONDict = {
                 "settings": {
                     "path": self._games_path,
                     "game": self.TYPES_MAPPING.get(game_type)
@@ -69,10 +88,11 @@ class GameEngine:
                     ('TasksEvaluationState', 'TaskEvaluationGameState'),
                     ('PokerLobbyEndState', 'LobbyGameState')
                     ],
-                "rule": ['1', '2', '3', '5', '8', 'c', 'l']
+                "rule": '1,2,3,4,5,6,7,-'
             }
+            if props:
+                config.update(props)
+            return config
         
-        if game_type == GameTypesChoices.RETRO:
-            pass
         
         raise ValueError(f"Unknown game type: {game_type}")

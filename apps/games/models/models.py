@@ -1,3 +1,4 @@
+from __future__ import annotations
 from django.db import models
 from django.utils.translation import gettext as _
 from django.utils import timezone
@@ -53,6 +54,14 @@ class GameInstance(models.Model):
         if self.players.filter(user = user).exists():
             self.players.filter(role = GameRoleChoices.FACILITATOR).update(role = GameRoleChoices.PLAYER)
             self.players.filter(user = user).update(role = GameRoleChoices.FACILITATOR)
+            
+    def add_player(self, user) -> Player:
+        if self.players.filter(user = user).exists():
+            raise ValueError("Player already in a game")
+        else:
+            p = Player.objects.create(user=user, game=self)
+            p.save()
+            return p
     
     def update_config(self, new_config: JSONDict) -> None:
         self.config = new_config
