@@ -1,3 +1,4 @@
+from __future__ import annotations
 import pytest
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -26,7 +27,7 @@ class Client(APIClient):
     def access_token(self) -> str:
         return self._access_token
     
-    def auth(self, active_user: User) -> 'Client': # type: ignore
+    def auth(self, active_user: User) -> Client:
         self.logout()
         refresh_token = RefreshToken.for_user(active_user)
         
@@ -45,26 +46,3 @@ def authorized_user(user: User) -> Client:
 @pytest.fixture
 def unauthorized_user() -> Client:
     return Client()
-
-# ------ UP MOVED 
-from apps.core.teams.models import Team
-
-def test_create_game(authorized_user: Client, 
-                     unauthorized_user: Client, 
-                     team: Team) -> None:
-    url: str = reverse("teams:poker-game-list", args=(str(team.id)))
-    
-    resp = authorized_user.get(url)
-    assert resp.status_code == 200
-    assert resp.data == []
-    
-    resp = authorized_user.post(url)
-    
-    assert resp.status_code == 200
-    # assert resp.data == {
-    #     "host_by": "...",
-    #     "type": "P",
-    #     "status": "O",
-    #     "config": {},
-    #     "created_at": ""
-    # }

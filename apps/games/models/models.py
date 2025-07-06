@@ -1,7 +1,6 @@
 from django.db import models
 from django.utils.translation import gettext as _
 from django.utils import timezone
-from apps.core.teams.models import Team
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth import get_user_model
 from apps.games.core.utils.types import JSONDict
@@ -27,7 +26,6 @@ class GameRoleChoices(models.TextChoices):
 # v1.0 Вырезаем команды, оставляем только игру. В ТГ будет через группу.
 class GameInstance(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    # team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="game")
     host_by = models.ForeignKey(User,
                                 verbose_name=_("Hoted by"),
                                 on_delete=models.CASCADE,

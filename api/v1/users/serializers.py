@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from djoser import serializers as djoser_serializers
 from djoser.conf import settings
-from apps.core.teams.models import Team
 import logging
 
 UserModel = get_user_model()
@@ -37,9 +36,8 @@ class UserSerializer(UserRepresentMixin, djoser_serializers.UserSerializer):
                   'email', 'image_url')
         
 class CurrentUserSerializer(UserRepresentMixin, djoser_serializers.UserSerializer):
-    teams = serializers.PrimaryKeyRelatedField(queryset = Team.objects.all(), many = True) 
     
     class Meta:
         model = UserModel
         fields = ('id', 'username', 'first_name', 'last_name',
-                  'email', 'image_url', 'telegram_id', 'teams')
+                  'email', 'image_url', 'telegram_id')

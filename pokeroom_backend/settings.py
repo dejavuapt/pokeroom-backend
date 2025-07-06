@@ -26,8 +26,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'apps.core.users.apps.UsersConfig',
-    'apps.core.teams.apps.TeamsConfig',
-    'apps.core.rooms.apps.RoomsConfig',
     'apps.games.apps.GamesConfig',
     'rest_framework',
     'djoser',

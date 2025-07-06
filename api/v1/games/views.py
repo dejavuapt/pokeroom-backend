@@ -3,8 +3,6 @@ from apps.games.models.poker_planning import TaskEvaluationGameState, LobbyGameS
 from apps.games.core.engine import GameEngine
 from api.v1.games.serializers import *
 
-from apps.core.teams.models import Team
-
 from typing import Optional
 import logging
 logger = logging.getLogger()
@@ -19,20 +17,14 @@ class PokerGameViewset(viewsets.GenericViewSet,
     serializer_class = GameinstanceSerializer
     # POST poker means create it
     def get_queryset(self):
-        team_id = self.kwargs.get("id", None)
-        return GameInstance.objects.filter(team = Team.objects.get(pk = team_id))
+        poker_id = self.kwargs.get("id", None)
+        return GameInstance.objects.filter(pk=poker_id)
     
     def create(self, request, *args, **kwargs):
         # TODO: add support rules {"rule": [1,2,3,4,5]}
-        t: Team = get_object_or_404(Team.objects.all(), id = self.kwargs.get("id", None))
-        logger.warning(f"{type(t.owner_id)}, {type(self.request.user)}")
-        if t.owner_id != self.request.user:
-            self.permission_denied(self.request, 
-                                   code=status.HTTP_403_FORBIDDEN)
         try:
-            eng = GameEngine().bootstrap_or_resume(team=t,
-                                                game_type=GameTypesChoices.POKER,
-                                                init_user=self.request.user)
+            eng = GameEngine().bootstrap_or_resume(game_type=GameTypesChoices.POKER,
+                                                   init_user=self.request.user)
             serializer = self.get_serializer(eng._game_instance)
         except Exception as exc: 
             return response.Response({"detail": str(exc)},
@@ -47,34 +39,9 @@ class PokerGameViewset(viewsets.GenericViewSet,
                                  status=status.HTTP_200_OK)
     
 class PokergameDoViewset(viewsets.GenericViewSet):
-    """
-    get_current_state
-    GET state
-    join connect to game who in a team
-    GET POST players
-    
-    lobby
-    POST add_task if user is facilitator
-    # add_more_tasks -- parser
-    
-    poker state
-    GET POST current_task
-    
-    POST estimate -- add user estimate
-    GET estimate -- get current task estimate if user role is facilitator
-    
-    get_current_task
-    set_current_task if user role is facilitator
-    add_user_estimate acces to players
-    calculate_current_task_estimate if user role is facilitator
-    update_task if user role is facilitator
-    
-    close_game
-    """
-    
     def get_queryset(self):
-        team_id = self.kwargs.get("id", None)
-        return GameInstance.objects.filter(team = Team.objects.get(pk = team_id))
+        poker_id = self.kwargs.get("id", None)
+        return GameInstance.objects.filter(pk=poker_id)
     
     def get_object(self):
         game_object = self.get_queryset().first()
