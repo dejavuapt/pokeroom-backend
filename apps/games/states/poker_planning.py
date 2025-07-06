@@ -55,10 +55,13 @@ class PokerLobbyState(State):
         self._instance.update_result({"tasks": []})
         return
     
-    def out_(self) -> list[str]:
+    def out_(self) -> dict[str, str]:
         self._instance.completed = True
         self._instance.save()
-        return self.tasks
+        res_dict = {}
+        for name in self.tasks:
+            res_dict.update({name: "-"})
+        return res_dict
     
     @property
     def tasks(self) -> list[str]:

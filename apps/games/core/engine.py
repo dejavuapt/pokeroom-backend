@@ -62,6 +62,11 @@ class GameEngine:
             return self
         raise ValueError(f"Method {action} doesn't exist.")
     
+    def forward(self) -> GameEngine:
+        ## TODO: Need to check if that was last method to close instance, and you cannot resume game that finished
+        self._manager.state_forward()
+        return self
+    
     def _init_instance(self, host: models.AbstractUser, 
                             config: JSONDict, game_type: GameTypesChoices) -> GameInstance:
         gi = GameInstance.objects.create(host_by=host, 

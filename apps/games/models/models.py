@@ -103,6 +103,11 @@ class GameState(models.Model):
     class Meta:
         abstract = True
     
+    def update_config_data(self, data: JSONDict) -> None:
+        self.game.config.update(data)
+        self.game.save()
+    
     def update_result(self, data: dict) -> None:
         self.result_data.update(data)
         self.save()
+        self.update_config_data(self.result_data)
