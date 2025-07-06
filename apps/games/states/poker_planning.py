@@ -26,6 +26,11 @@ class TasksEvaluationState(State):
 
     @stage_action
     def add_user_estimate(self, username: str, estimate: int) -> None:
+        if isinstance(estimate, str): 
+            try:
+                estimate = int(estimate)
+            except:
+                estimate = 0
         self._instance.submit_vote(username, estimate)
     
     @stage_action

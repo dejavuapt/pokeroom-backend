@@ -166,10 +166,33 @@ class PokergameDoViewset(viewsets.GenericViewSet):
         return response.Response(status=status.HTTP_501_NOT_IMPLEMENTED)
             
 
-    
+    # 12Q345qwe
     @decorators.action(methods=[HTTPMethod.GET, HTTPMethod.POST], 
                        detail=False)
     def estimate(self, request, *args, **kwargs) -> response.Response:
-        pass
+
+        if request.method == HTTPMethod.GET:
+            try: 
+                if gi := self.get_object():
+                    ge = GameEngine().resume_by_gi(gi).do('calculate-current-task-estimate')
+                    cs = ge._game_manager._current_state._instance.current_task
+                    res = ge._game_manager._current_state._instance.result_data.get(cs, '-')
+                return response.Response({"current_task_estimate": res},
+                                         status=status.HTTP_202_ACCEPTED)
+            except Exception as exc:
+                return response.Response({"detail": str(exc)},
+                                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        if request.method == HTTPMethod.POST:
+            user_estimate: str = request.data.get("estimate", None)
+            gi = self.get_queryset().first()
+            if user_estimate and gi:
+                current_user = self.request.user
+                GameEngine().resume_by_gi(gi).do('add-user-estimate',
+                                                 {"username": current_user.username, 
+                                                  "estimate": user_estimate})
+                return response.Response(status=status.HTTP_202_ACCEPTED)
+        
+        return response.Response(status=status.HTTP_501_NOT_IMPLEMENTED)
     
     

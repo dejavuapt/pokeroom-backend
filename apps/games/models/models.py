@@ -17,16 +17,17 @@ class GameTypesChoices(models.TextChoices):
 class GameInstanceStatusChoices(models.TextChoices):
     OPEN = 'O', _("Opened")
     STARTED = 'S', _("Started")
-    FINISED = 'F', _("Finisehd")
+    FINISED = 'F', _("Finished")
     CLOSED = 'C', _("Closed")
     
 class GameRoleChoices(models.TextChoices):
     FACILITATOR = 'F', _("Facilitator")
     PLAYER = 'P', _("Player")
 
+# v1.0 Вырезаем команды, оставляем только игру. В ТГ будет через группу.
 class GameInstance(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="game")
+    # team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="game")
     host_by = models.ForeignKey(User,
                                 verbose_name=_("Hoted by"),
                                 on_delete=models.CASCADE,

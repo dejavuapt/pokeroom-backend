@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Optional, Any, Union, Final
 from apps.games.models.models import GameInstance, GameTypesChoices, GameInstanceStatusChoices
 from apps.games.core.game_manager import GameManager
@@ -65,7 +66,7 @@ class GameEngine:
         
         return self
     
-    def resume_by_gi(self, instance: GameInstance) -> 'GameEngine':
+    def resume_by_gi(self, instance: GameInstance) -> GameEngine:
         self._game_instance = instance
         self._game_manager = GameManager(config=self._game_instance.config,
                                          instance=self._game_instance)

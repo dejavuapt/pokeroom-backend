@@ -41,7 +41,7 @@ class TeamSreializer(serializers.ModelSerializer):
             "team_id": _id,
             'owner': str(representation.pop('owner_id')),
             "data": representation,
-            'role': str(MembershipRoleChoice(user.member_in.filter(team_id = instance).first().role).label)
+            'role': str(MembershipRoleChoice(user.member_in.filter(team_id = instance).first().role).label) if user else "Member"
         }
         
     def create(self, validated_data):

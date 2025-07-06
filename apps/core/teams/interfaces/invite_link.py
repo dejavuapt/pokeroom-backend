@@ -30,7 +30,7 @@ class InviteLinkInterface(models.Model):
     )
     expires_at = models.DateTimeField(
         _("Token expires date"),
-        default = timezone.now() + timedelta(days=1),
+        default = timezone.now() + timedelta(days=365),
         editable=False
     )
     
