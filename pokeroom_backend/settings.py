@@ -18,6 +18,7 @@ DEBUG = bool(os.environ.get('DJANGO_DEBUG', 0))
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', ['127.0.0.1']).split(',')
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -25,8 +26,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'apps.core.users.apps.UsersConfig',
-    'apps.core.teams.apps.TeamsConfig',
-    'apps.core.rooms.apps.RoomsConfig',
     'apps.games.apps.GamesConfig',
     'rest_framework',
     'djoser',
@@ -60,6 +59,15 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'pokeroom_backend.wsgi.application'
+ASGI_APPLICATION = 'pokeroom_backend.asgi.application'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.getenv("REDIS_HOST"), os.getenv("REDIS_PORT"))],
+        },
+    },
+}
 
 
 # Database
@@ -73,6 +81,13 @@ DATABASES = {
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
         'HOST': os.environ.get('DB_HOST'),
         'PORT': os.environ.get('DB_PORT'),
+    }
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.%s" % (os.environ.get('CACHE_BACKEND', 'redis.RedisCache')),
+        "LOCATION": os.environ.get('CACHE_LOCATION'),
     }
 }
 
@@ -109,10 +124,10 @@ LOGGING = {
             "class": "logging.StreamHandler",
         },
     },
-    "root": {
-        "handlers": ["console"],
-        "level": "WARNING",
-    },
+    # "root": {
+    #     "handlers": ["console"],
+    #     "level": "WARNING",
+    # },
     "loggers": {
         "api": {
             "level": "DEBUG",

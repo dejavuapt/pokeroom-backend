@@ -23,7 +23,6 @@ class PokeroomUser(AbstractUser):
         blank=True,
         null=True
     )
-    image_url = models.ImageField(_("image url"),null=True,default=None,blank=True)
     created_at = models.DateTimeField(_("created at"),default=timezone.now)
     telegram_id = models.CharField(_("telegram id"),max_length=20, default=None, null=True, blank=True)
     

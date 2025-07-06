@@ -2,8 +2,8 @@ from django.urls import path, include
 from rest_framework.schemas import get_schema_view
 
 urlpatterns = [
-   path('t/', include('api.v1.teams.urls', namespace="teams")), 
    path('u/', include(('api.v1.users.urls', 'apps.core.users'), namespace="users")), 
+   path('games/', include(('api.v1.games.urls', 'apps.games'), namespace="games")),
    path('token/', include(('djoser.urls.jwt', 'djoser'), namespace="token")),
    path(
       'docs/',

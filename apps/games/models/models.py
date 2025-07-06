@@ -1,7 +1,7 @@
+from __future__ import annotations
 from django.db import models
 from django.utils.translation import gettext as _
 from django.utils import timezone
-from apps.core.teams.models import Team
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth import get_user_model
 from apps.games.core.utils.types import JSONDict
@@ -17,16 +17,16 @@ class GameTypesChoices(models.TextChoices):
 class GameInstanceStatusChoices(models.TextChoices):
     OPEN = 'O', _("Opened")
     STARTED = 'S', _("Started")
-    FINISED = 'F', _("Finisehd")
+    FINISED = 'F', _("Finished")
     CLOSED = 'C', _("Closed")
     
 class GameRoleChoices(models.TextChoices):
     FACILITATOR = 'F', _("Facilitator")
     PLAYER = 'P', _("Player")
 
+# v1.0 Вырезаем команды, оставляем только игру. В ТГ будет через группу.
 class GameInstance(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="game")
     host_by = models.ForeignKey(User,
                                 verbose_name=_("Hoted by"),
                                 on_delete=models.CASCADE,
@@ -38,7 +38,7 @@ class GameInstance(models.Model):
                               max_length=1,
                               choices=GameInstanceStatusChoices.choices,
                               default=GameInstanceStatusChoices.OPEN)
-    config = models.JSONField(_("Config data"))
+    config = models.JSONField(_("Config data"), default=dict)
     created_at = models.DateTimeField(_("Created at"), default=timezone.now)
     
     def save(self, **kwargs):
@@ -54,6 +54,14 @@ class GameInstance(models.Model):
         if self.players.filter(user = user).exists():
             self.players.filter(role = GameRoleChoices.FACILITATOR).update(role = GameRoleChoices.PLAYER)
             self.players.filter(user = user).update(role = GameRoleChoices.FACILITATOR)
+            
+    def add_player(self, user) -> Player:
+        if self.players.filter(user = user).exists():
+            raise ValueError("Player already in a game")
+        else:
+            p = Player.objects.create(user=user, game=self)
+            p.save()
+            return p
     
     def update_config(self, new_config: JSONDict) -> None:
         self.config = new_config

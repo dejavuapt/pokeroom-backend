@@ -1,7 +1,7 @@
 from apps.games.core.state import State
 from typing import Optional, Union, Any
 from apps.games.core.utils.decorators import stage_action
-
+import copy
 
 class TasksEvaluationState(State):
     _name = "Task Evaluation"
@@ -26,6 +26,11 @@ class TasksEvaluationState(State):
 
     @stage_action
     def add_user_estimate(self, username: str, estimate: int) -> None:
+        if isinstance(estimate, str): 
+            try:
+                estimate = int(estimate)
+            except:
+                estimate = 0
         self._instance.submit_vote(username, estimate)
     
     @stage_action
@@ -61,8 +66,9 @@ class PokerLobbyState(State):
     
     @stage_action
     def add_task(self, name: str) -> None:
-        self._instance.result_data.get("tasks").append(name)
-        self._instance.save()
+        tasks: list = copy.deepcopy(self._instance.result_data.get("tasks"))
+        tasks.append(name)
+        self._instance.update_result({"tasks": tasks})
 
 class PokerLobbyEndState(State):
     _name = "End lobby"
